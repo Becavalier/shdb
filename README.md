@@ -10,11 +10,11 @@ A simple and lightweight local nosql db for shell script, mainly for data persis
 
 ### Install:
 
->* sudo bash ./shdb.sh install
+>* sudo bash ./dist/shdb.sh install
 
 ### How to Use:
 
-#### Normal Mode
+#### Normal CLI Mode
 >* `shdb status`
 >* `shdb set [key] [value]`
 >* `shdb get [key]`
@@ -23,12 +23,20 @@ A simple and lightweight local nosql db for shell script, mainly for data persis
 
 #### Console Mode
 
-Use `shdb console` to enter the Console mode
+Use `shdb console` to enter the Console mode.
 
 >* `set [key] [value]`
 >* `get [key]`
 >* `delete [key]`
 >* `exit`
+
+#### Shell Mode
+
+Please use this mode's syntax in shell programming, demo used for instnce.
+
+>* `shdb [-s|--shell] set [key] [value]`
+>* `shdb [-s|--shell] get [key]`
+>* `shdb [-s|--shell] delete [key]`
 
 ### Author
 YHSPY

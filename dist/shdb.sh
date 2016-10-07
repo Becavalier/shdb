@@ -95,7 +95,7 @@ uninstall() {
 get() {
 	if has_been_installed
 	then
-		base64_encode $1
+		base64_encode "$1"
 		local SHDB_KEY=$BASE64_ENCODED
 
 		# Find key in db
@@ -109,9 +109,19 @@ get() {
 		then
 			local SHDB_VAL=${GREP_INFO##*:}
 			base64_decode $SHDB_VAL
-			printf "%s\n" $BASE64_DECODED
+			if [ "$2" = --shell ]
+			then
+				printf "%s" $BASE64_DECODED
+			else
+				printf "%s\n" $BASE64_DECODED
+			fi
 		else
-			printf "[Empty]\n"
+			if [ "$2" = --shell ]
+			then
+				exit 1
+			else
+				printf "[Empty]\n"
+			fi
 		fi
 	else
 		report_error_msg NOT_INSTALLED
@@ -121,10 +131,10 @@ get() {
 set() {
 	if has_been_installed
 	then
-		base64_encode $1
+		base64_encode "$1"
 		local SHDB_KEY=$BASE64_ENCODED
 
-		base64_encode $2
+		base64_encode "$2"
 		local SHDB_VALUE=$BASE64_ENCODED
 
 		# Find key in db
@@ -140,7 +150,14 @@ set() {
 		else
 			sudo sed -i -e "$ a ${SHDB_KEY}:${SHDB_VALUE}" ~/.shdb.master.db
 		fi
-		printf "%s\n" "{${1} => ${2}}" 
+
+		if [ "$3" = --shell ]
+		then
+			exit 0
+		else
+			printf "%s\n" "{${1} => ${2}}" 
+		fi
+		
 	else
 		report_error_msg NOT_INSTALLED
 	fi
@@ -149,7 +166,7 @@ set() {
 delete() {
 	if has_been_installed
 	then
-		base64_encode $1
+		base64_encode "$1"
 		local SHDB_KEY=$BASE64_ENCODED
 
 		# Find key in db
@@ -164,9 +181,23 @@ delete() {
 
 			# Clear empty space in db
 			sudo sed -i '/^$/d' ~/.shdb.master.db
-			printf "[Deleted]\n"
+
+			if [ "$2" = --shell ]
+			then
+				exit 0
+			else
+				printf "[Deleted]\n"
+			fi
+
 		else
-			printf "[Empty]\n"
+
+			if [ "$2" = --shell ]
+			then
+				exit 1
+			else
+				printf "[Empty]\n"
+			fi
+
 		fi
 	else
 		report_error_msg NOT_INSTALLED
@@ -279,52 +310,81 @@ IFS=" "
 
 
 # Deal with parameters
-if [ $# -eq 3 ]
+if [ "$1" = "-s" ] || [ "$1" = "--shell" ]
 then
-	case "$1" in
-		set )
-			set ${2} ${3}
-		;;
-		* )
-			report_error_msg PARAMS_ERR
-		;;
-	esac
-elif [ $# -eq 2 ]
-then 
-	case "$1" in
-		get )
-			get ${2}
-		;;
-		delete )
-			delete ${2}
-		;;
-		* )
-			report_error_msg PARAMS_ERR
-		;;
-	esac
-elif [ $# -eq 1 ]
-then
-	case "$1" in
-		install )
-			install
-		;;
-		status )
-			print_status
-		;;
-		uninstall )
-			uninstall
-		;;
-		console )
-			console
-		;;
-		* )
-			report_error_msg PARAMS_ERR 
-		;;
-	esac
+	if [ $# -eq 4 ]
+	then
+		case "$2" in
+			set )
+				set "${3}" "${4}" --shell
+			;;
+			* )
+				report_error_msg PARAMS_ERR
+			;;
+		esac
+	elif [ $# -eq 3 ]
+	then 
+		case "$2" in
+			get )
+				get "${3}" --shell
+			;;
+			delete )
+				delete "${3}" --shell
+			;;
+			* )
+				report_error_msg PARAMS_ERR
+			;;
+		esac
+	else
+		report_error_msg PARAMS_ERR
+	fi
 else
-	print_status
+	if [ $# -eq 3 ]
+	then
+		case "$1" in
+			set )
+				set "${2}" "${3}"
+			;;
+			* )
+				report_error_msg PARAMS_ERR
+			;;
+		esac
+	elif [ $# -eq 2 ]
+	then 
+		case "$1" in
+			get )
+				get "${2}"
+			;;
+			delete )
+				delete "${2}"
+			;;
+			* )
+				report_error_msg PARAMS_ERR
+			;;
+		esac
+	elif [ $# -eq 1 ]
+	then
+		case "$1" in
+			install )
+				install
+			;;
+			status )
+				print_status
+			;;
+			uninstall )
+				uninstall
+			;;
+			console )
+				console
+			;;
+			* )
+				report_error_msg PARAMS_ERR 
+			;;
+		esac
+	else
+		print_status
+	fi
 fi
-
 
 IFS=$PRE_IFS
 
