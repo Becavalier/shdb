@@ -13,9 +13,9 @@
 #	Use:
 #
 # 	shdb status
-#   shdb set [key] [value]
+#	shdb set [key] [value]
 #	shdb get [key]
-#   shdb delete [key]
+#	shdb delete [key]
 #	shdb uninstall
 #
 # Author: YHSPY
@@ -100,7 +100,7 @@ get() {
 
 		# Find key in db
 
-		sudo grep -n ${SHDB_KEY} ~/.shdb.master.db 1> /tmp/.shdb.tmp
+		sudo grep -w -n ${SHDB_KEY} ~/.shdb.master.db 1> /tmp/.shdb.tmp
 		local GREP_INFO=$(cat /tmp/.shdb.tmp)
 
 		clear_temp_file
@@ -128,7 +128,7 @@ set() {
 		local SHDB_VALUE=$BASE64_ENCODED
 
 		# Find key in db
-		sudo grep -n ${SHDB_KEY} ~/.shdb.master.db 1> /tmp/.shdb.tmp
+		sudo grep -w -n ${SHDB_KEY} ~/.shdb.master.db 1> /tmp/.shdb.tmp
 		local GREP_INFO=$(cat /tmp/.shdb.tmp)
 
 		clear_temp_file
@@ -153,7 +153,7 @@ delete() {
 		local SHDB_KEY=$BASE64_ENCODED
 
 		# Find key in db
-		sudo grep -i -e ${SHDB_KEY} ~/.shdb.master.db 1> /tmp/.shdb.tmp
+		sudo grep -w ${SHDB_KEY} ~/.shdb.master.db 1> /tmp/.shdb.tmp
 		local GREP_INFO=$(cat /tmp/.shdb.tmp)
 
 		clear_temp_file
@@ -161,6 +161,9 @@ delete() {
 		if [ -n "$GREP_INFO" ] 
 		then
 			sudo sed -i -e "s/${GREP_INFO}//g" ~/.shdb.master.db
+
+			# Clear empty space in db
+			sudo sed -i '/^$/d' ~/.shdb.master.db
 			printf "[Deleted]\n"
 		else
 			printf "[Empty]\n"
@@ -200,17 +203,17 @@ report_error_msg() {
 	case "$1" in 
 		PARAMS_ERR ) 
 			cat << EOF
-[!shdb error!] Invalid parameters or format, please check and re-execute.
+[!shdb error!] [SHDB] Invalid parameters or format, please check and re-execute.
 EOF
 		;;
 		ALREADY_INSTALLED ) 
 			cat << EOF
-[!shdb error!] SHDB had already been installed.
+[!shdb error!] [SHDB] Had already been installed.
 EOF
 		;;
 		NOT_INSTALLED ) 
 			cat << EOF
-[!shdb error!] SHDB had not been installed, please try this again after installing.
+[!shdb error!] [SHDB] Had not been installed, please try this again after installing.
 EOF
 		;;
 	esac
@@ -220,12 +223,12 @@ report_info_msg() {
 	case "$1" in 
 		UNINSTALLED ) 
 			cat << EOF
-[!shdb info!] SHDB now has been uninstalled.
+[SHDB] Now has been uninstalled... success
 EOF
 		;;
 		INSTALLED ) 
 			cat << EOF
-[!shdb info!] SHDB now has been installed.
+[SHDB] Now has been installed... success
 EOF
 		;;
 	esac
