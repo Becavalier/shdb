@@ -3,6 +3,8 @@
 ### Description
 A simple and lightweight local nosql db for shell script, mainly for data persistence.
 
+Please do not compare SHDB with MySQL, Redis and any other DB programs. SHDB is mainly used on Shell programming, and also written in Shell, all this features are suitable for Shell programming.
+
 * Do not occupy any CPU or Memory when in idle moment.
 * Lightweight and easy to use.
 * Support persistent data storing.
