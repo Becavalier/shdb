@@ -205,22 +205,24 @@ delete() {
 }
 
 print_status() {
-	ls -al ~/.shdb.master.db 1> /tmp/.shdb.tmp
-	local LS_INFO=$(cat /tmp/.shdb.tmp)
+	if has_been_installed
+	then
+		ls -al ~/.shdb.master.db 1> /tmp/.shdb.tmp
+		local LS_INFO=$(cat /tmp/.shdb.tmp)
 
-	local FILE_SIZE_S1=${LS_INFO#* }
-	local FILE_SIZE_S2=${FILE_SIZE_S1#* }
-	local FILE_SIZE_S3=${FILE_SIZE_S2#* }
-	local FILE_SIZE_S4=${FILE_SIZE_S3#* }
-	local FILE_SIZE_S5=${FILE_SIZE_S4% *}
-	local FILE_SIZE_S6=${FILE_SIZE_S5% *}
-	local FILE_SIZE_S7=${FILE_SIZE_S6% *}
-	local FILE_SIZE_S8=${FILE_SIZE_S7% *}
-	local FILE_SIZE=${FILE_SIZE_S8% *}
+		local FILE_SIZE_S1=${LS_INFO#* }
+		local FILE_SIZE_S2=${FILE_SIZE_S1#* }
+		local FILE_SIZE_S3=${FILE_SIZE_S2#* }
+		local FILE_SIZE_S4=${FILE_SIZE_S3#* }
+		local FILE_SIZE_S5=${FILE_SIZE_S4% *}
+		local FILE_SIZE_S6=${FILE_SIZE_S5% *}
+		local FILE_SIZE_S7=${FILE_SIZE_S6% *}
+		local FILE_SIZE_S8=${FILE_SIZE_S7% *}
+		local FILE_SIZE=${FILE_SIZE_S8% *}
 
-	clear_temp_file
+		clear_temp_file
 
-	cat << EOF
+		cat << EOF
 
 [SHDB] v${VERSION}                      
 Release Date: ${RELEASE}              
@@ -228,6 +230,9 @@ Author: YHSPY
 DB Size: ${FILE_SIZE} byte
 
 EOF
+	else
+		report_error_msg NOT_INSTALLED
+	fi
 }
 
 report_error_msg() {
