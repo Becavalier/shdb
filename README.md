@@ -38,6 +38,11 @@ Please use this mode's syntax in shell programming, demo used for instnce.
 >* `shdb [-s|--shell] get [key]`
 >* `shdb [-s|--shell] delete [key]`
 
+## TODO
+* Long length content support.
+* Adapter to spaces in content.
+* Optimize storing structure.
+
 ### Author
 YHSPY
 ### License
