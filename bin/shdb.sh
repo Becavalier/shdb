@@ -8,14 +8,15 @@
 #
 # 	Install:
 #
-# 	bash ./shdb.sh install
+# 	bash bin/shdb.sh install
 #	
 #	Use:
 #
 # 	shdb status
-#	shdb set [key] [value]
-#	shdb get [key]
-#	shdb delete [key]
+#   shdb [-s|--shell] isset [key]
+#	shdb [-s|--shell] set [key] [value]
+#	shdb [-s|--shell] get [key]
+#	shdb [-s|--shell] delete [key]
 #	shdb uninstall
 #
 # Author: YHSPY

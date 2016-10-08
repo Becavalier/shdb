@@ -15,7 +15,7 @@ Please do not compare SHDB with MySQL, Redis and any other DB programs. SHDB is 
 
 ### Installation
 
->* sudo bash ./bin/shdb.sh install
+>* sudo bash bin/shdb.sh install
 
 ### How to Use
 
