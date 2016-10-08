@@ -39,7 +39,7 @@ Use `shdb console` to enter the Console mode.
 
 #### Shell Mode
 
-Please use this mode's syntax in shell programming, demo used for instnce.
+Please use this mode's syntax in shell programming, demo used for instance.
 
 >* `shdb [-s|--shell] isset [key]`
 >* `shdb [-s|--shell] set [key] [value]`
