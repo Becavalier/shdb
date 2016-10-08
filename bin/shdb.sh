@@ -28,7 +28,7 @@ BASE64_ENCODED=''
 BASE64_DECODED=''
 
 VERSION=0.1
-RELEASE=2016/10/07
+RELEASE=2016/10/08
 
 # Functions here
 has_been_installed() {
@@ -71,7 +71,7 @@ AUTHOR=YHSPY
 DATE=$(date)
 EOF
 		# Move to /usr/bin
-		sudo cp ${0} /usr/bin/shdb
+		sudo cp -f ${0} /usr/bin/shdb
 		sudo chmod +x /usr/bin/shdb
 		report_info_msg INSTALLED
 
@@ -99,7 +99,7 @@ isset() {
 		local SHDB_KEY=$BASE64_ENCODED
 
 		# Find key in db
-		sudo grep -w -n ${SHDB_KEY} ~/.shdb.master.db 1> /tmp/.shdb.tmp
+		sudo grep -w -n "${SHDB_KEY}" ~/.shdb.master.db 1> /tmp/.shdb.tmp
 		local GREP_INFO=$(cat /tmp/.shdb.tmp)
 
 		clear_temp_file
@@ -135,7 +135,7 @@ set() {
 		local SHDB_VALUE=$BASE64_ENCODED
 
 		# Find key in db
-		sudo grep -w -n ${SHDB_KEY} ~/.shdb.master.db 1> /tmp/.shdb.tmp
+		sudo grep -w -n "${SHDB_KEY}" ~/.shdb.master.db 1> /tmp/.shdb.tmp
 		local GREP_INFO=$(cat /tmp/.shdb.tmp)
 
 		clear_temp_file
@@ -152,7 +152,7 @@ set() {
 		then
 			exit 0
 		else
-			printf "%s\n" "{${1} => ${2}}" 
+			printf "%s\n" "[OK]" 
 		fi
 		
 	else
@@ -167,8 +167,7 @@ get() {
 		local SHDB_KEY=$BASE64_ENCODED
 
 		# Find key in db
-
-		sudo grep -w -n ${SHDB_KEY} ~/.shdb.master.db 1> /tmp/.shdb.tmp
+		sudo grep -w -n "${SHDB_KEY}" ~/.shdb.master.db 1> /tmp/.shdb.tmp
 		local GREP_INFO=$(cat /tmp/.shdb.tmp)
 
 		clear_temp_file
@@ -177,11 +176,12 @@ get() {
 		then
 			local SHDB_VAL=${GREP_INFO##*:}
 			base64_decode $SHDB_VAL
+
 			if [ "$2" = --shell ]
 			then
-				printf "%s" $BASE64_DECODED
+				printf "%s" "$BASE64_DECODED"
 			else
-				printf "%s\n" $BASE64_DECODED
+				printf "%s\n" "$BASE64_DECODED"
 			fi
 		else
 			if [ "$2" = --shell ]
@@ -203,7 +203,7 @@ delete() {
 		local SHDB_KEY=$BASE64_ENCODED
 
 		# Find key in db
-		sudo grep -w ${SHDB_KEY} ~/.shdb.master.db 1> /tmp/.shdb.tmp
+		sudo grep -w "${SHDB_KEY}" ~/.shdb.master.db 1> /tmp/.shdb.tmp
 		local GREP_INFO=$(cat /tmp/.shdb.tmp)
 
 		clear_temp_file
@@ -221,16 +221,13 @@ delete() {
 			else
 				printf "[Deleted]\n"
 			fi
-
 		else
-
 			if [ "$2" = --shell ]
 			then
 				exit 1
 			else
 				printf "[Empty]\n"
 			fi
-
 		fi
 	else
 		report_error_msg NOT_INSTALLED
@@ -240,29 +237,22 @@ delete() {
 print_status() {
 	if has_been_installed
 	then
-		ls -al ~/.shdb.master.db 1> /tmp/.shdb.tmp
-		local LS_INFO=$(cat /tmp/.shdb.tmp)
+		du -h ~/.shdb.master.db 1> /tmp/.shdb.tmp
 
-		local FILE_SIZE_S1=${LS_INFO#* }
-		local FILE_SIZE_S2=${FILE_SIZE_S1#* }
-		local FILE_SIZE_S3=${FILE_SIZE_S2#* }
-		local FILE_SIZE_S4=${FILE_SIZE_S3#* }
-		local FILE_SIZE_S5=${FILE_SIZE_S4% *}
-		local FILE_SIZE_S6=${FILE_SIZE_S5% *}
-		local FILE_SIZE_S7=${FILE_SIZE_S6% *}
-		local FILE_SIZE_S8=${FILE_SIZE_S7% *}
-		local FILE_SIZE=${FILE_SIZE_S8% *}
+		local DU_INFO=$(cat /tmp/.shdb.tmp)
+		local FILE_SIZE=${DU_INFO%	*}
 
 		clear_temp_file
 
 		cat << EOF
 
-[SHDB] v${VERSION}      
+[SHDB]      
 -----------------     
 
+Release Version: ${VERSION} 
 Release Date: ${RELEASE}              
 Author: YHSPY                       
-DB Size: ${FILE_SIZE} byte
+DB Size: ${FILE_SIZE}
 
 -----------------    
 
@@ -276,17 +266,17 @@ report_error_msg() {
 	case "$1" in 
 		PARAMS_ERR ) 
 			cat << EOF
-[!shdb error!] [SHDB] Invalid parameters or format, please check and re-execute.
+[shdb ERR] Wrong number of arguments for this command.
 EOF
 		;;
 		ALREADY_INSTALLED ) 
 			cat << EOF
-[!shdb error!] [SHDB] Had already been installed.
+[shdb ERR] SHDB had already been installed.
 EOF
 		;;
 		NOT_INSTALLED ) 
 			cat << EOF
-[!shdb error!] [SHDB] Had not been installed, please try this again after installing.
+[shdb ERR] Please install SHDB first before execute this command.
 EOF
 		;;
 	esac
@@ -296,12 +286,12 @@ report_info_msg() {
 	case "$1" in 
 		UNINSTALLED ) 
 			cat << EOF
-[SHDB] Now has been uninstalled... success
+[shdb INFO] SHDB now has been uninstalled... success
 EOF
 		;;
 		INSTALLED ) 
 			cat << EOF
-[SHDB] Now has been installed... success
+[shdb INFO] SHDB now has been installed... success
 EOF
 		;;
 	esac
@@ -310,7 +300,7 @@ EOF
 console() {
 	while :
 	do
-		printf "%s" "> "
+		printf "%s" "shdb > "
 		read ORDER
 		cat > /tmp/.shdb.tmp << EOF
 ${ORDER}
@@ -322,25 +312,25 @@ EOF
 			local SHDB_KEY=${SHDORDER_COMMAND_LINE_S1%% *}
 			local SHDB_VALUE=${SHDORDER_COMMAND_LINE_S1#${SHDB_KEY} }
 
-			set $SHDB_KEY $SHDB_VALUE
+			set "$SHDB_KEY" "$SHDB_VALUE"
 		elif [ -n "$(grep "[[:space:]]*get[[:space:]][^[:space:]]*" /tmp/.shdb.tmp)" ]
 		then
 			local ORDER_COMMAND_LINE=$(cat /tmp/.shdb.tmp)
 			local SHDB_KEY=${ORDER_COMMAND_LINE#*get }
 
-			get $SHDB_KEY
+			get "$SHDB_KEY"
 		elif [ -n "$(grep "[[:space:]]*delete[[:space:]][^[:space:]]*" /tmp/.shdb.tmp)" ]
 		then
 			local ORDER_COMMAND_LINE=$(cat /tmp/.shdb.tmp)
 			local SHDB_KEY=${ORDER_COMMAND_LINE#*delete }
 
-			delete $SHDB_KEY
+			delete "$SHDB_KEY"
 		elif [ -n "$(grep "[[:space:]]*isset[[:space:]][^[:space:]]*" /tmp/.shdb.tmp)" ]
 		then
 			local ORDER_COMMAND_LINE=$(cat /tmp/.shdb.tmp)
 			local SHDB_KEY=${ORDER_COMMAND_LINE#*isset }
 
-			isset $SHDB_KEY
+			isset "$SHDB_KEY"
 		elif [ "$ORDER" = "exit" ]
 		then
 			break
