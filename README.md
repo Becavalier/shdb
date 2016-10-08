@@ -12,12 +12,13 @@ Please do not compare SHDB with MySQL, Redis and any other DB programs. SHDB is 
 
 ### Install:
 
->* sudo bash ./dist/shdb.sh install
+>* sudo bash ./bin/shdb.sh install
 
 ### How to Use:
 
 #### Normal CLI Mode
 >* `shdb status`
+>* `shdb isset [key]`
 >* `shdb set [key] [value]`
 >* `shdb get [key]`
 >* `shdb delete [key]`
@@ -27,6 +28,7 @@ Please do not compare SHDB with MySQL, Redis and any other DB programs. SHDB is 
 
 Use `shdb console` to enter the Console mode.
 
+>* `isset [key]`
 >* `set [key] [value]`
 >* `get [key]`
 >* `delete [key]`
@@ -36,6 +38,7 @@ Use `shdb console` to enter the Console mode.
 
 Please use this mode's syntax in shell programming, demo used for instnce.
 
+>* `shdb [-s|--shell] isset [key]`
 >* `shdb [-s|--shell] set [key] [value]`
 >* `shdb [-s|--shell] get [key]`
 >* `shdb [-s|--shell] delete [key]`

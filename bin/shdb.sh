@@ -92,14 +92,13 @@ uninstall() {
 	fi
 }
 
-get() {
+isset() {
 	if has_been_installed
 	then
 		base64_encode "$1"
 		local SHDB_KEY=$BASE64_ENCODED
 
 		# Find key in db
-
 		sudo grep -w -n ${SHDB_KEY} ~/.shdb.master.db 1> /tmp/.shdb.tmp
 		local GREP_INFO=$(cat /tmp/.shdb.tmp)
 
@@ -107,20 +106,18 @@ get() {
 
 		if [ -n "$GREP_INFO" ] 
 		then
-			local SHDB_VAL=${GREP_INFO##*:}
-			base64_decode $SHDB_VAL
 			if [ "$2" = --shell ]
 			then
-				printf "%s" $BASE64_DECODED
+				exit 0
 			else
-				printf "%s\n" $BASE64_DECODED
+				printf "%s\n" [True]
 			fi
 		else
 			if [ "$2" = --shell ]
 			then
 				exit 1
 			else
-				printf "[Empty]\n"
+				printf "%s\n" [False]
 			fi
 		fi
 	else
@@ -158,6 +155,42 @@ set() {
 			printf "%s\n" "{${1} => ${2}}" 
 		fi
 		
+	else
+		report_error_msg NOT_INSTALLED
+	fi
+}
+
+get() {
+	if has_been_installed
+	then
+		base64_encode "$1"
+		local SHDB_KEY=$BASE64_ENCODED
+
+		# Find key in db
+
+		sudo grep -w -n ${SHDB_KEY} ~/.shdb.master.db 1> /tmp/.shdb.tmp
+		local GREP_INFO=$(cat /tmp/.shdb.tmp)
+
+		clear_temp_file
+
+		if [ -n "$GREP_INFO" ] 
+		then
+			local SHDB_VAL=${GREP_INFO##*:}
+			base64_decode $SHDB_VAL
+			if [ "$2" = --shell ]
+			then
+				printf "%s" $BASE64_DECODED
+			else
+				printf "%s\n" $BASE64_DECODED
+			fi
+		else
+			if [ "$2" = --shell ]
+			then
+				exit 1
+			else
+				printf "[Empty]\n"
+			fi
+		fi
 	else
 		report_error_msg NOT_INSTALLED
 	fi
@@ -224,10 +257,14 @@ print_status() {
 
 		cat << EOF
 
-[SHDB] v${VERSION}                      
+[SHDB] v${VERSION}      
+-----------------     
+
 Release Date: ${RELEASE}              
 Author: YHSPY                       
 DB Size: ${FILE_SIZE} byte
+
+-----------------    
 
 EOF
 	else
@@ -298,6 +335,12 @@ EOF
 			local SHDB_KEY=${ORDER_COMMAND_LINE#*delete }
 
 			delete $SHDB_KEY
+		elif [ -n "$(grep "[[:space:]]*isset[[:space:]][^[:space:]]*" /tmp/.shdb.tmp)" ]
+		then
+			local ORDER_COMMAND_LINE=$(cat /tmp/.shdb.tmp)
+			local SHDB_KEY=${ORDER_COMMAND_LINE#*isset }
+
+			isset $SHDB_KEY
 		elif [ "$ORDER" = "exit" ]
 		then
 			break
@@ -336,6 +379,9 @@ then
 			delete )
 				delete "${3}" --shell
 			;;
+			isset )
+				isset "${3}" --shell
+			;;
 			* )
 				report_error_msg PARAMS_ERR
 			;;
@@ -362,6 +408,9 @@ else
 			;;
 			delete )
 				delete "${2}"
+			;;
+			isset )
+				isset "${2}"
 			;;
 			* )
 				report_error_msg PARAMS_ERR
