@@ -64,6 +64,10 @@ install() {
 	then
 		report_error_msg ALREADY_INSTALLED
 	else
+		# Checklist
+		#  
+
+
 		sudo echo SSDB DATEBASE FILE > ~/.shdb.master.db 
 		sudo cat > ~/.shdb.master.conf << EOF
 NAME=SHDB
