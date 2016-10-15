@@ -16,21 +16,21 @@ Please do not compare SHDB with MySQL, Redis and any other DB programs. SHDB is 
 ### Installation Instruction
 
 #### Clone with SSH
->* git clone git@github.com:Becavalier/SHDB.git 
+>* `git clone git@github.com:Becavalier/SHDB.git`
 
 #### Clone with HTTPS
->* git clone https://github.com/Becavalier/SHDB.git
+>* `git clone https://github.com/Becavalier/SHDB.git`
 
 #### Installation
->* make 
+>* `make` 
 
 ### Quick Test
 
->* make test
+>* `make test`
 
 ### How to Use
 
-![image](https://github.com/Becavalier/SHDB/blob/master/imgs/srceenshot.png?raw=true)
+![image](https://github.com/Becavalier/SHDB/blob/master/imgs/screenshot.png?raw=true)
 
 #### Normal CLI Mode
 >* `shdb status`
