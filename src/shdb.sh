@@ -271,17 +271,17 @@ report_error_msg() {
 	case "$1" in 
 		PARAMS_ERR ) 
 			cat << EOF
-[shdb ERR] Wrong number of arguments for this command.
+[shdb ERR] Wrong number of arguments for this command... error
 EOF
 		;;
 		ALREADY_INSTALLED ) 
 			cat << EOF
-[shdb ERR] SHDB had already been installed.
+[shdb ERR] SHDB had already been installed... error
 EOF
 		;;
 		NOT_INSTALLED ) 
 			cat << EOF
-[shdb ERR] Please install SHDB first before execute this command.
+[shdb ERR] Please install SHDB first before execute this command... error
 EOF
 		;;
 	esac

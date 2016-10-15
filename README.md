@@ -13,11 +13,24 @@ Please do not compare SHDB with MySQL, Redis and any other DB programs. SHDB is 
 * Support persistent data storing.
 * Support console mode for quick operation in CLI mode.
 
-### Installation
+### Installation Instruction
 
->* sudo bash bin/shdb.sh install
+#### Clone with SSH
+>* git clone git@github.com:Becavalier/SHDB.git 
+
+#### Clone with HTTPS
+>* git clone https://github.com/Becavalier/SHDB.git
+
+#### Installation
+>* make 
+
+### Quick Test
+
+>* make test
 
 ### How to Use
+
+![image](https://github.com/Becavalier/SHDB/blob/master/imgs/srceenshot.png?raw=true)
 
 #### Normal CLI Mode
 >* `shdb status`
