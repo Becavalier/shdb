@@ -1,38 +1,45 @@
 # SHDB
 
-### Description
+## Description
 A simple and lightweight local key-value pair db for shell script, mainly for data persistence.
 
 Please do not compare SHDB with MySQL, Redis and any other DB programs. SHDB is mainly used on Shell programming, it is easy and simple, only support key-value pair storing, just for shell script programming.
 
 
-### Features
+## Features
 
 * Do not occupy any CPU or Memory when in idle moment.
 * Written in pure shell, lightweight and easy to use.
 * Support persistent data storing.
 * Support console mode for quick operation in CLI mode.
 
-### Installation Instruction
+## Installation Instruction
 
-#### Clone with SSH
+### Clone with SSH
 >* `git clone git@github.com:Becavalier/SHDB.git`
 
-#### Clone with HTTPS
+### Clone with HTTPS
 >* `git clone https://github.com/Becavalier/SHDB.git`
 
-#### Installation
+### Installation
+Install SHDB use defualt settings:
 >* `make` 
 
-### Quick Test
+Specify the maximum availabe storage size of SHDB:
+
+>* `make SIZE=1` 
+
+Parameter `SIZE=1` means set the maximum availabe storage size of SHDB is 1MB, the maximum size is no more than 1024MB.
+
+## Quick Test
 
 >* `make test`
 
-### How to Use
+## How to Use
 
 ![image](https://github.com/Becavalier/SHDB/blob/master/imgs/screenshot.png?raw=true)
 
-#### Normal CLI Mode
+### Normal CLI Mode
 >* `shdb status`
 >* `shdb [-s|--shell] isset [key]`
 >* `shdb [-s|--shell] set [key] [value]`
@@ -40,7 +47,7 @@ Please do not compare SHDB with MySQL, Redis and any other DB programs. SHDB is 
 >* `shdb [-s|--shell] delete [key]`
 >* `shdb uninstall`
 
-#### Console Mode
+### Console Mode
 
 Use `shdb console` to enter the Console mode.
 
@@ -50,7 +57,7 @@ Use `shdb console` to enter the Console mode.
 >* `delete [key]`
 >* `exit`
 
-#### Shell Mode
+### Shell Mode
 
 Please use this mode's syntax in shell programming, demo used for instance.
 
@@ -59,12 +66,12 @@ Please use this mode's syntax in shell programming, demo used for instance.
 >* `shdb [-s|--shell] get [key]`
 >* `shdb [-s|--shell] delete [key]`
 
-### TODO
+## TODO
 * ~~Adapter to blank spaces in content.~~
 * Long length content support.
 
-### Author
+## Author
 @YHSPY
 
-### License
+## License
 MIT

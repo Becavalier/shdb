@@ -1,6 +1,8 @@
+export SIZE=1
+
 install:
 	@sudo chmod +x ./src/shdb.sh 
-	@sudo bash ./src/shdb.sh install 
+	@sudo bash ./src/shdb.sh install --size $(SIZE)
 
 clean:
 	@sudo ./src/shdb.sh uninstall

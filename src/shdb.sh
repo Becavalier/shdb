@@ -25,89 +25,153 @@
 
 # Set global variables
 BASE64_ENCODED=''
-
 BASE64_DECODED=''
 
-VERSION=0.1
-RELEASE=2016/10/08
+CONFIG_KEY=''
+CONFIG_VAL=''
+
+DB_SIZE=0
+
+# Default settings key-value pairs
+VERSION=0.2
+RELEASE=2016/10/16
+AVSIZE=1048576
+
+# Key files' name
+CONF_FILE_NAME=".shdb.master.conf"
+DB_FILE_NAME=".shdb.master.db"
+TMP_FILE_NAME=".shdb.tmp"
 
 # Functions here
-has_been_installed() {
+_func_has_been_installed() {
 	# Return 0 represent true
-	[ -f ~/.shdb.master.conf ] && [ -f ~/.shdb.master.db ] && return 0 || return 1
+	[ -f ~/$CONF_FILE_NAME ] && [ -f ~/$DB_FILE_NAME ] && return 0 || return 1
 }
 
-clear_temp_file() {
-	sudo rm -f /tmp/.shdb.tmp
+_func_clear_temp() {
+	sudo rm -f /tmp/$TMP_FILE_NAME
 }
 
-base64_encode() {
-	cat > /tmp/.shdb.tmp << EOF
+_func_get_db_system_item() {
+	if _func_has_been_installed
+	then
+		# Find key in .conf file
+		sudo grep -w -n "${CONFIG_KEY}" ~/$CONF_FILE_NAME 1> /tmp/$TMP_FILE_NAME
+		local GREP_INFO=$(cat /tmp/$TMP_FILE_NAME)
+
+		_func_clear_temp
+
+		if [ -n "$GREP_INFO" ] 
+		then
+			CONFIG_VAL=${GREP_INFO##*=}
+		fi
+	else
+		_func_report_error_msg NOT_INSTALLED
+	fi
+}
+
+_func_base64_encode() {
+	cat > /tmp/$TMP_FILE_NAME << EOF
 ${1}
 EOF
-	BASE64_ENCODED=$(base64 /tmp/.shdb.tmp)
+	BASE64_ENCODED=$(base64 /tmp/$TMP_FILE_NAME)
 
-	clear_temp_file
+	_func_clear_temp
 }
 
-base64_decode() {
-	cat > /tmp/.shdb.tmp << EOF
+_func_base64_decode() {
+	cat > /tmp/$TMP_FILE_NAME << EOF
 ${1}
 EOF
-	BASE64_DECODED=$(base64 -d /tmp/.shdb.tmp)
+	BASE64_DECODED=$(base64 -d /tmp/$TMP_FILE_NAME)
 
-	clear_temp_file
+	_func_clear_temp
+}
+
+_func_update_db_size_2bytes() {
+	if _func_has_been_installed
+	then
+		du -b ~/$DB_FILE_NAME 1> /tmp/$TMP_FILE_NAME
+
+		local DU_INFO=$(cat /tmp/$TMP_FILE_NAME)
+		local FILE_SIZE=${DU_INFO%	*}
+
+		_func_clear_temp
+
+		DB_SIZE=$FILE_SIZE
+	else
+		_func_report_error_msg NOT_INSTALLED
+	fi
 }
 
 install() {
-	if has_been_installed
+	if _func_has_been_installed
 	then
-		report_error_msg ALREADY_INSTALLED
+		_func_report_error_msg ALREADY_INSTALLED
 	else
 		# Checklist
 		#  
+		if [ $# -eq 2 ] 
+		then
+			if [ "${1}" = "--size" ] || [ "${1}" = "-s" ]
+			then
+				local AVSIZE_VAL=${2}
 
+				if [ $AVSIZE_VAL -eq 0 ] || [ $AVSIZE_VAL -ge 1025 ]
+				then
+					_func_report_error_msg PARAMS_ERR
+					exit 1
+				else
+					AVSIZE_VAL=$(($AVSIZE_VAL*1048576))
+					AVSIZE=$AVSIZE_VAL
+				fi
+			fi
+		fi
+		sudo echo [SSDB DATEBASE FILE] > ~/$DB_FILE_NAME 
+		sudo cat > ~/$CONF_FILE_NAME << EOF
+[SSDB CONFIGURATION FILE]
 
-		sudo echo SSDB DATEBASE FILE > ~/.shdb.master.db 
-		sudo cat > ~/.shdb.master.conf << EOF
 NAME=SHDB
 VARSION=${VERSION}
+RELEASE=${RELEASE}
 AUTHOR=YHSPY
+AVSIZE=${AVSIZE}
 DATE=$(date)
 EOF
 		# Move to /usr/bin
 		sudo cp -f ${0} /usr/bin/shdb
 		sudo chmod +x /usr/bin/shdb
-		report_info_msg INSTALLED
+
+		_func_report_info_msg INSTALLED
 
 		#rm -f ${0}
 	fi
 }
 
 uninstall() {
-	if [ -f ~/.shdb.master.conf ] || [ -f ~/.shdb.master.db ] || [ -f /tmp/.shdb.tmp ]
+	if [ -f ~/$CONF_FILE_NAME ] || [ -f ~/$DB_FILE_NAME ] || [ -f /tmp/$TMP_FILE_NAME ]
 	then
 		sudo rm -f ~/.shdb.master.*
-		sudo rm -f /tmp/.shdb.tmp
+		sudo rm -f /tmp/$TMP_FILE_NAME
 		sudo rm -f /usr/bin/shdb
 
-		report_info_msg UNINSTALLED
+		_func_report_info_msg UNINSTALLED
 	else
-		report_error_msg NOT_INSTALLED
+		_func_report_error_msg NOT_INSTALLED
 	fi
 }
 
 isset() {
-	if has_been_installed
+	if _func_has_been_installed
 	then
-		base64_encode "$1"
+		_func_base64_encode "$1"
 		local SHDB_KEY=$BASE64_ENCODED
 
 		# Find key in db
-		sudo grep -w -n "${SHDB_KEY}" ~/.shdb.master.db 1> /tmp/.shdb.tmp
-		local GREP_INFO=$(cat /tmp/.shdb.tmp)
+		sudo grep -w -n "${SHDB_KEY}" ~/$DB_FILE_NAME 1> /tmp/$TMP_FILE_NAME
+		local GREP_INFO=$(cat /tmp/$TMP_FILE_NAME)
 
-		clear_temp_file
+		_func_clear_temp
 
 		if [ -n "$GREP_INFO" ] 
 		then
@@ -126,31 +190,42 @@ isset() {
 			fi
 		fi
 	else
-		report_error_msg NOT_INSTALLED
+		_func_report_error_msg NOT_INSTALLED
 	fi
 }
 
 set() {
-	if has_been_installed
+	CONFIG_KEY='AVSIZE'
+
+	_func_get_db_system_item
+	_func_update_db_size_2bytes
+
+	if [ $DB_SIZE -ge $CONFIG_VAL ]
 	then
-		base64_encode "$1"
+		_func_report_error_msg DB_OVERFLOW
+		exit 1
+	fi
+	
+	if _func_has_been_installed
+	then
+		_func_base64_encode "$1"
 		local SHDB_KEY=$BASE64_ENCODED
 
-		base64_encode "$2"
+		_func_base64_encode "$2"
 		local SHDB_VALUE=$BASE64_ENCODED
 
 		# Find key in db
-		sudo grep -w -n "${SHDB_KEY}" ~/.shdb.master.db 1> /tmp/.shdb.tmp
-		local GREP_INFO=$(cat /tmp/.shdb.tmp)
+		sudo grep -w -n "${SHDB_KEY}" ~/$DB_FILE_NAME 1> /tmp/$TMP_FILE_NAME
+		local GREP_INFO=$(cat /tmp/$TMP_FILE_NAME)
 
-		clear_temp_file
+		_func_clear_temp
 
 		if [ -n "$GREP_INFO" ] 
 		then
 			local OLD_VAL=${GREP_INFO#*:}
-			sudo sed -i -e "s#${OLD_VAL}#${SHDB_KEY}:${SHDB_VALUE}#g" ~/.shdb.master.db
+			sudo sed -i -e "s#${OLD_VAL}#${SHDB_KEY}:${SHDB_VALUE}#g" ~/$DB_FILE_NAME
 		else
-			sudo sed -i -e "$ a ${SHDB_KEY}:${SHDB_VALUE}" ~/.shdb.master.db
+			sudo sed -i -e "$ a ${SHDB_KEY}:${SHDB_VALUE}" ~/$DB_FILE_NAME
 		fi
 
 		if [ "$3" = --shell ]
@@ -161,26 +236,26 @@ set() {
 		fi
 		
 	else
-		report_error_msg NOT_INSTALLED
+		_func_report_error_msg NOT_INSTALLED
 	fi
 }
 
 get() {
-	if has_been_installed
+	if _func_has_been_installed
 	then
-		base64_encode "$1"
+		_func_base64_encode "$1"
 		local SHDB_KEY=$BASE64_ENCODED
 
 		# Find key in db
-		sudo grep -w -n "${SHDB_KEY}" ~/.shdb.master.db 1> /tmp/.shdb.tmp
-		local GREP_INFO=$(cat /tmp/.shdb.tmp)
+		sudo grep -w -n "${SHDB_KEY}" ~/$DB_FILE_NAME 1> /tmp/$TMP_FILE_NAME
+		local GREP_INFO=$(cat /tmp/$TMP_FILE_NAME)
 
-		clear_temp_file
+		_func_clear_temp
 
 		if [ -n "$GREP_INFO" ] 
 		then
 			local SHDB_VAL=${GREP_INFO##*:}
-			base64_decode $SHDB_VAL
+			_func_base64_decode $SHDB_VAL
 
 			if [ "$2" = --shell ]
 			then
@@ -197,28 +272,28 @@ get() {
 			fi
 		fi
 	else
-		report_error_msg NOT_INSTALLED
+		_func_report_error_msg NOT_INSTALLED
 	fi
 }
 
 delete() {
-	if has_been_installed
+	if _func_has_been_installed
 	then
-		base64_encode "$1"
+		_func_base64_encode "$1"
 		local SHDB_KEY=$BASE64_ENCODED
 
 		# Find key in db
-		sudo grep -w "${SHDB_KEY}" ~/.shdb.master.db 1> /tmp/.shdb.tmp
-		local GREP_INFO=$(cat /tmp/.shdb.tmp)
+		sudo grep -w "${SHDB_KEY}" ~/$DB_FILE_NAME 1> /tmp/$TMP_FILE_NAME
+		local GREP_INFO=$(cat /tmp/$TMP_FILE_NAME)
 
-		clear_temp_file
+		_func_clear_temp
 
 		if [ -n "$GREP_INFO" ] 
 		then
-			sudo sed -i -e "s/${GREP_INFO}//g" ~/.shdb.master.db
+			sudo sed -i -e "s/${GREP_INFO}//g" ~/$DB_FILE_NAME
 
 			# Clear empty space in db
-			sudo sed -i '/^$/d' ~/.shdb.master.db
+			sudo sed -i '/^$/d' ~/$DB_FILE_NAME
 
 			if [ "$2" = --shell ]
 			then
@@ -235,19 +310,19 @@ delete() {
 			fi
 		fi
 	else
-		report_error_msg NOT_INSTALLED
+		_func_report_error_msg NOT_INSTALLED
 	fi
 }
 
-print_status() {
-	if has_been_installed
+_func_print_status() {
+	if _func_has_been_installed
 	then
-		du -h ~/.shdb.master.db 1> /tmp/.shdb.tmp
+		du -h ~/$DB_FILE_NAME 1> /tmp/$TMP_FILE_NAME
 
-		local DU_INFO=$(cat /tmp/.shdb.tmp)
+		local DU_INFO=$(cat /tmp/$TMP_FILE_NAME)
 		local FILE_SIZE=${DU_INFO%	*}
 
-		clear_temp_file
+		_func_clear_temp
 
 		cat << EOF
 
@@ -263,15 +338,15 @@ DB Size: ${FILE_SIZE}
 
 EOF
 	else
-		report_error_msg NOT_INSTALLED
+		_func_report_error_msg NOT_INSTALLED
 	fi
 }
 
-report_error_msg() {
+_func_report_error_msg() {
 	case "$1" in 
 		PARAMS_ERR ) 
 			cat << EOF
-[shdb ERR] Wrong number of arguments for this command... error
+[shdb ERR] Wrong number or format of arguments for this command... error
 EOF
 		;;
 		ALREADY_INSTALLED ) 
@@ -284,10 +359,15 @@ EOF
 [shdb ERR] Please install SHDB first before execute this command... error
 EOF
 		;;
+		DB_OVERFLOW ) 
+			cat << EOF
+[shdb ERR] SHDB had exceeded the maximum storage size you ever set... error
+EOF
+		;;
 	esac
 }
 
-report_info_msg() {
+_func_report_info_msg() {
 	case "$1" in 
 		UNINSTALLED ) 
 			cat << EOF
@@ -307,32 +387,32 @@ console() {
 	do
 		printf "%s" "shdb > "
 		read ORDER
-		cat > /tmp/.shdb.tmp << EOF
+		cat > /tmp/$TMP_FILE_NAME << EOF
 ${ORDER}
 EOF
-		if [ -n "$(grep [[:space:]]*set[[:space:]][^[:space:]]*[[:space:]][^[:space:]]* /tmp/.shdb.tmp)" ]
+		if [ -n "$(grep [[:space:]]*set[[:space:]][^[:space:]]*[[:space:]][^[:space:]]* /tmp/$TMP_FILE_NAME)" ]
 		then
-			local ORDER_COMMAND_LINE=$(cat /tmp/.shdb.tmp)
+			local ORDER_COMMAND_LINE=$(cat /tmp/$TMP_FILE_NAME)
 			local SHDORDER_COMMAND_LINE_S1=${ORDER_COMMAND_LINE#*set }
 			local SHDB_KEY=${SHDORDER_COMMAND_LINE_S1%% *}
 			local SHDB_VALUE=${SHDORDER_COMMAND_LINE_S1#${SHDB_KEY} }
 
 			set "$SHDB_KEY" "$SHDB_VALUE"
-		elif [ -n "$(grep "[[:space:]]*get[[:space:]][^[:space:]]*" /tmp/.shdb.tmp)" ]
+		elif [ -n "$(grep "[[:space:]]*get[[:space:]][^[:space:]]*" /tmp/$TMP_FILE_NAME)" ]
 		then
-			local ORDER_COMMAND_LINE=$(cat /tmp/.shdb.tmp)
+			local ORDER_COMMAND_LINE=$(cat /tmp/$TMP_FILE_NAME)
 			local SHDB_KEY=${ORDER_COMMAND_LINE#*get }
 
 			get "$SHDB_KEY"
-		elif [ -n "$(grep "[[:space:]]*delete[[:space:]][^[:space:]]*" /tmp/.shdb.tmp)" ]
+		elif [ -n "$(grep "[[:space:]]*delete[[:space:]][^[:space:]]*" /tmp/$TMP_FILE_NAME)" ]
 		then
-			local ORDER_COMMAND_LINE=$(cat /tmp/.shdb.tmp)
+			local ORDER_COMMAND_LINE=$(cat /tmp/$TMP_FILE_NAME)
 			local SHDB_KEY=${ORDER_COMMAND_LINE#*delete }
 
 			delete "$SHDB_KEY"
-		elif [ -n "$(grep "[[:space:]]*isset[[:space:]][^[:space:]]*" /tmp/.shdb.tmp)" ]
+		elif [ -n "$(grep "[[:space:]]*isset[[:space:]][^[:space:]]*" /tmp/$TMP_FILE_NAME)" ]
 		then
-			local ORDER_COMMAND_LINE=$(cat /tmp/.shdb.tmp)
+			local ORDER_COMMAND_LINE=$(cat /tmp/$TMP_FILE_NAME)
 			local SHDB_KEY=${ORDER_COMMAND_LINE#*isset }
 
 			isset "$SHDB_KEY"
@@ -340,7 +420,7 @@ EOF
 		then
 			break
 		else
-			report_error_msg PARAMS_ERR
+			_func_report_error_msg PARAMS_ERR
 		fi
 	done
 }
@@ -362,7 +442,7 @@ then
 				set "${3}" "${4}" --shell
 			;;
 			* )
-				report_error_msg PARAMS_ERR
+				_func_report_error_msg PARAMS_ERR
 			;;
 		esac
 	elif [ $# -eq 3 ]
@@ -378,11 +458,11 @@ then
 				isset "${3}" --shell
 			;;
 			* )
-				report_error_msg PARAMS_ERR
+				_func_report_error_msg PARAMS_ERR
 			;;
 		esac
 	else
-		report_error_msg PARAMS_ERR
+		_func_report_error_msg PARAMS_ERR
 	fi
 else
 	if [ $# -eq 3 ]
@@ -391,8 +471,11 @@ else
 			set )
 				set "${2}" "${3}"
 			;;
+			install )
+				install "${2}" "${3}"
+			;;
 			* )
-				report_error_msg PARAMS_ERR
+				_func_report_error_msg PARAMS_ERR
 			;;
 		esac
 	elif [ $# -eq 2 ]
@@ -408,7 +491,7 @@ else
 				isset "${2}"
 			;;
 			* )
-				report_error_msg PARAMS_ERR
+				_func_report_error_msg PARAMS_ERR
 			;;
 		esac
 	elif [ $# -eq 1 ]
@@ -418,7 +501,7 @@ else
 				install
 			;;
 			status )
-				print_status
+				_func_print_status
 			;;
 			uninstall )
 				uninstall
@@ -427,11 +510,11 @@ else
 				console
 			;;
 			* )
-				report_error_msg PARAMS_ERR 
+				_func_report_error_msg PARAMS_ERR 
 			;;
 		esac
 	else
-		print_status
+		_func_print_status
 	fi
 fi
 
