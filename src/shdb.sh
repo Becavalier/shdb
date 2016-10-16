@@ -324,6 +324,15 @@ _func_print_status() {
 
 		_func_clear_temp
 
+		# Get maximum avaliable size
+		CONFIG_KEY='AVSIZE'
+
+		_func_get_db_system_item
+
+		# Format size to 'MB'
+		local DB_MAXIMUM_SIZE=$CONFIG_VAL
+		DB_MAXIMUM_SIZE=$(($DB_MAXIMUM_SIZE/1048576))
+
 		cat << EOF
 
 [SHDB]      
@@ -332,7 +341,8 @@ _func_print_status() {
 Release Version: ${VERSION} 
 Release Date: ${RELEASE}              
 Author: YHSPY                       
-DB Size: ${FILE_SIZE}
+DB Current Size: ${FILE_SIZE}
+DB Avaliable Size: ${DB_MAXIMUM_SIZE}MB
 
 -----------------    
 

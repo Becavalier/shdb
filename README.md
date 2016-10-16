@@ -29,7 +29,7 @@ Specify the maximum availabe storage size of SHDB:
 
 >* `make SIZE=1` 
 
-Parameter `SIZE=1` means set the maximum availabe storage size of SHDB is 1MB, the maximum size is no more than 1024MB.
+Parameter `SIZE=1` means set the maximum availabe storage size of SHDB as 1MB. (the maximum size is no more than 1024MB)
 
 ## Quick Test
 
