@@ -37,7 +37,7 @@ Parameter `SIZE=1` means set the maximum availabe storage size of SHDB as 1MB. (
 
 ## How to Use
 
-![image](https://github.com/Becavalier/SHDB/blob/master/imgs/screenshot.png?raw=true)
+![image](https://github.com/Becavalier/SHDB/blob/master/imgs/screenshot.jpg?raw=true)
 
 ### Normal CLI Mode
 >* `shdb status`
@@ -68,7 +68,9 @@ Please use this mode's syntax in shell programming, demo used for instance.
 
 ## TODO
 * ~~Adapter to blank spaces in content.~~
-* Long length content support.
+* ~~Optimize storing engin as block storing style.~~
+* ~~Long length content support.~~
+* Ability of getting db storing items' count support.
 
 ## Author
 @YHSPY

@@ -32,32 +32,32 @@ CONFIG_VAL=''
 
 DB_SIZE=0
 
-# Default settings key-value pairs
-VERSION=0.2
-RELEASE=2016/10/16
+# Set default setting key-value pairs
+VERSION=1.0
+RELEASE=2016/10/18
 AVSIZE=1048576
 
-# Key files' name
-CONF_FILE_NAME=".shdb.master.conf"
-DB_FILE_NAME=".shdb.master.db"
-TMP_FILE_NAME=".shdb.tmp"
+# Set key files' name
+DB_CONF_FILE_NAME=".shdb.master.conf"
+DB_DATA_FILE_NAME=".shdb.master.db"
+DB_TEMP_FILE_NAME=".shdb.tmp"
 
 # Functions here
 _func_has_been_installed() {
 	# Return 0 represent true
-	[ -f ~/$CONF_FILE_NAME ] && [ -f ~/$DB_FILE_NAME ] && return 0 || return 1
+	[ -f ~/$DB_CONF_FILE_NAME ] && [ -f ~/$DB_DATA_FILE_NAME ] && return 0 || return 1
 }
 
 _func_clear_temp() {
-	sudo rm -f /tmp/$TMP_FILE_NAME
+	sudo rm -f /tmp/$DB_TEMP_FILE_NAME
 }
 
 _func_get_db_system_item() {
 	if _func_has_been_installed
 	then
-		# Find key in .conf file
-		sudo grep -w -n "${CONFIG_KEY}" ~/$CONF_FILE_NAME 1> /tmp/$TMP_FILE_NAME
-		local GREP_INFO=$(cat /tmp/$TMP_FILE_NAME)
+		# Find key in db configuration file
+		sudo grep -w -n "${CONFIG_KEY}" ~/$DB_CONF_FILE_NAME 1> /tmp/$DB_TEMP_FILE_NAME
+		local GREP_INFO=$(cat /tmp/$DB_TEMP_FILE_NAME)
 
 		_func_clear_temp
 
@@ -71,19 +71,22 @@ _func_get_db_system_item() {
 }
 
 _func_base64_encode() {
-	cat > /tmp/$TMP_FILE_NAME << EOF
-${1}
-EOF
-	BASE64_ENCODED=$(base64 /tmp/$TMP_FILE_NAME)
+	# Optimize according to RFC-822
+	sudo su -c "echo -n '${1}' | base64 > /tmp/$DB_TEMP_FILE_NAME"
+
+	sudo sed -i ':a;N;$!ba;s/\n/ /g' /tmp/$DB_TEMP_FILE_NAME
+	sudo sed -i 's/ \+//g' /tmp/$DB_TEMP_FILE_NAME
+
+	BASE64_ENCODED=$(sudo cat /tmp/$DB_TEMP_FILE_NAME)
 
 	_func_clear_temp
 }
 
 _func_base64_decode() {
-	cat > /tmp/$TMP_FILE_NAME << EOF
+	cat > /tmp/$DB_TEMP_FILE_NAME << EOF
 ${1}
 EOF
-	BASE64_DECODED=$(base64 -d /tmp/$TMP_FILE_NAME)
+	BASE64_DECODED=$(sudo base64 -d /tmp/$DB_TEMP_FILE_NAME)
 
 	_func_clear_temp
 }
@@ -91,9 +94,9 @@ EOF
 _func_update_db_size_2bytes() {
 	if _func_has_been_installed
 	then
-		du -b ~/$DB_FILE_NAME 1> /tmp/$TMP_FILE_NAME
+		du -b ~/$DB_DATA_FILE_NAME 1> /tmp/$DB_TEMP_FILE_NAME
 
-		local DU_INFO=$(cat /tmp/$TMP_FILE_NAME)
+		local DU_INFO=$(cat /tmp/$DB_TEMP_FILE_NAME)
 		local FILE_SIZE=${DU_INFO%	*}
 
 		_func_clear_temp
@@ -127,8 +130,8 @@ install() {
 				fi
 			fi
 		fi
-		sudo echo [SSDB DATEBASE FILE] > ~/$DB_FILE_NAME 
-		sudo cat > ~/$CONF_FILE_NAME << EOF
+		sudo printf "[SSDB DATEBASE FILE]\n|" > ~/$DB_DATA_FILE_NAME 
+		sudo cat > ~/$DB_CONF_FILE_NAME << EOF
 [SSDB CONFIGURATION FILE]
 
 NAME=SHDB
@@ -149,10 +152,10 @@ EOF
 }
 
 uninstall() {
-	if [ -f ~/$CONF_FILE_NAME ] || [ -f ~/$DB_FILE_NAME ] || [ -f /tmp/$TMP_FILE_NAME ]
+	if [ -f ~/$DB_CONF_FILE_NAME ] || [ -f ~/$DB_DATA_FILE_NAME ] || [ -f /tmp/$DB_TEMP_FILE_NAME ]
 	then
 		sudo rm -f ~/.shdb.master.*
-		sudo rm -f /tmp/$TMP_FILE_NAME
+		sudo rm -f /tmp/$DB_TEMP_FILE_NAME
 		sudo rm -f /usr/bin/shdb
 
 		_func_report_info_msg UNINSTALLED
@@ -168,8 +171,8 @@ isset() {
 		local SHDB_KEY=$BASE64_ENCODED
 
 		# Find key in db
-		sudo grep -w -n "${SHDB_KEY}" ~/$DB_FILE_NAME 1> /tmp/$TMP_FILE_NAME
-		local GREP_INFO=$(cat /tmp/$TMP_FILE_NAME)
+		sudo grep -o "|${SHDB_KEY}[^|]*|" ~/$DB_DATA_FILE_NAME 1> /tmp/$DB_TEMP_FILE_NAME
+		local GREP_INFO=$(cat /tmp/$DB_TEMP_FILE_NAME)
 
 		_func_clear_temp
 
@@ -198,6 +201,7 @@ set() {
 	CONFIG_KEY='AVSIZE'
 
 	_func_get_db_system_item
+	
 	_func_update_db_size_2bytes
 
 	if [ $DB_SIZE -ge $CONFIG_VAL ]
@@ -215,17 +219,16 @@ set() {
 		local SHDB_VALUE=$BASE64_ENCODED
 
 		# Find key in db
-		sudo grep -w -n "${SHDB_KEY}" ~/$DB_FILE_NAME 1> /tmp/$TMP_FILE_NAME
-		local GREP_INFO=$(cat /tmp/$TMP_FILE_NAME)
+		sudo grep -o "|${SHDB_KEY}[^|]*|" ~/$DB_DATA_FILE_NAME 1> /tmp/$DB_TEMP_FILE_NAME
+		local GREP_INFO=$(cat /tmp/$DB_TEMP_FILE_NAME)
 
 		_func_clear_temp
 
 		if [ -n "$GREP_INFO" ] 
 		then
-			local OLD_VAL=${GREP_INFO#*:}
-			sudo sed -i -e "s#${OLD_VAL}#${SHDB_KEY}:${SHDB_VALUE}#g" ~/$DB_FILE_NAME
+			sudo sed -i -e "s#${GREP_INFO}#|${SHDB_KEY}:${SHDB_VALUE}|#g" ~/$DB_DATA_FILE_NAME
 		else
-			sudo sed -i -e "$ a ${SHDB_KEY}:${SHDB_VALUE}" ~/$DB_FILE_NAME
+			sudo su -c "echo -n '${SHDB_KEY}:${SHDB_VALUE}|' >> $(echo ~)/$DB_DATA_FILE_NAME"
 		fi
 
 		if [ "$3" = --shell ]
@@ -247,14 +250,16 @@ get() {
 		local SHDB_KEY=$BASE64_ENCODED
 
 		# Find key in db
-		sudo grep -w -n "${SHDB_KEY}" ~/$DB_FILE_NAME 1> /tmp/$TMP_FILE_NAME
-		local GREP_INFO=$(cat /tmp/$TMP_FILE_NAME)
+		sudo grep -o "|${SHDB_KEY}[^|]*|" ~/$DB_DATA_FILE_NAME 1> /tmp/$DB_TEMP_FILE_NAME
+		local GREP_INFO=$(cat /tmp/$DB_TEMP_FILE_NAME)
 
 		_func_clear_temp
 
 		if [ -n "$GREP_INFO" ] 
 		then
-			local SHDB_VAL=${GREP_INFO##*:}
+			local SHDB_VAL_TEMP=${GREP_INFO##*:}
+			local SHDB_VAL=${SHDB_VAL_TEMP%%|*}
+
 			_func_base64_decode $SHDB_VAL
 
 			if [ "$2" = --shell ]
@@ -283,17 +288,14 @@ delete() {
 		local SHDB_KEY=$BASE64_ENCODED
 
 		# Find key in db
-		sudo grep -w "${SHDB_KEY}" ~/$DB_FILE_NAME 1> /tmp/$TMP_FILE_NAME
-		local GREP_INFO=$(cat /tmp/$TMP_FILE_NAME)
+		sudo grep -o "|${SHDB_KEY}[^|]*|" ~/$DB_DATA_FILE_NAME 1> /tmp/$DB_TEMP_FILE_NAME
+		local GREP_INFO=$(cat /tmp/$DB_TEMP_FILE_NAME)
 
 		_func_clear_temp
 
 		if [ -n "$GREP_INFO" ] 
 		then
-			sudo sed -i -e "s/${GREP_INFO}//g" ~/$DB_FILE_NAME
-
-			# Clear empty space in db
-			sudo sed -i '/^$/d' ~/$DB_FILE_NAME
+			sudo sed -i -e "s/${GREP_INFO}/|/g" ~/$DB_DATA_FILE_NAME
 
 			if [ "$2" = --shell ]
 			then
@@ -317,9 +319,9 @@ delete() {
 _func_print_status() {
 	if _func_has_been_installed
 	then
-		du -h ~/$DB_FILE_NAME 1> /tmp/$TMP_FILE_NAME
+		du -h ~/$DB_DATA_FILE_NAME 1> /tmp/$DB_TEMP_FILE_NAME
 
-		local DU_INFO=$(cat /tmp/$TMP_FILE_NAME)
+		local DU_INFO=$(cat /tmp/$DB_TEMP_FILE_NAME)
 		local FILE_SIZE=${DU_INFO%	*}
 
 		_func_clear_temp
@@ -337,13 +339,11 @@ _func_print_status() {
 
 [SHDB]      
 -----------------     
-
 Release Version: ${VERSION} 
 Release Date: ${RELEASE}              
 Author: YHSPY                       
 DB Current Size: ${FILE_SIZE}
-DB Avaliable Size: ${DB_MAXIMUM_SIZE}MB
-
+DB Maximum Size: ${DB_MAXIMUM_SIZE}MB
 -----------------    
 
 EOF
@@ -361,7 +361,7 @@ EOF
 		;;
 		ALREADY_INSTALLED ) 
 			cat << EOF
-[shdb ERR] SHDB had already been installed... error
+[shdb ERR] SHDB had already been installed before... error
 EOF
 		;;
 		NOT_INSTALLED ) 
@@ -381,12 +381,12 @@ _func_report_info_msg() {
 	case "$1" in 
 		UNINSTALLED ) 
 			cat << EOF
-[shdb INFO] SHDB now has been uninstalled... success
+[shdb INFO] SHDB now has been uninstalled from your system... success
 EOF
 		;;
 		INSTALLED ) 
 			cat << EOF
-[shdb INFO] SHDB now has been installed... success
+[shdb INFO] SHDB now has been installed on your system... success
 EOF
 		;;
 	esac
@@ -397,32 +397,32 @@ console() {
 	do
 		printf "%s" "shdb > "
 		read ORDER
-		cat > /tmp/$TMP_FILE_NAME << EOF
+		cat > /tmp/$DB_TEMP_FILE_NAME << EOF
 ${ORDER}
 EOF
-		if [ -n "$(grep [[:space:]]*set[[:space:]][^[:space:]]*[[:space:]][^[:space:]]* /tmp/$TMP_FILE_NAME)" ]
+		if [ -n "$(grep [[:space:]]*set[[:space:]][^[:space:]]*[[:space:]][^[:space:]]* /tmp/$DB_TEMP_FILE_NAME)" ]
 		then
-			local ORDER_COMMAND_LINE=$(cat /tmp/$TMP_FILE_NAME)
+			local ORDER_COMMAND_LINE=$(cat /tmp/$DB_TEMP_FILE_NAME)
 			local SHDORDER_COMMAND_LINE_S1=${ORDER_COMMAND_LINE#*set }
 			local SHDB_KEY=${SHDORDER_COMMAND_LINE_S1%% *}
 			local SHDB_VALUE=${SHDORDER_COMMAND_LINE_S1#${SHDB_KEY} }
 
 			set "$SHDB_KEY" "$SHDB_VALUE"
-		elif [ -n "$(grep "[[:space:]]*get[[:space:]][^[:space:]]*" /tmp/$TMP_FILE_NAME)" ]
+		elif [ -n "$(grep "[[:space:]]*get[[:space:]][^[:space:]]*" /tmp/$DB_TEMP_FILE_NAME)" ]
 		then
-			local ORDER_COMMAND_LINE=$(cat /tmp/$TMP_FILE_NAME)
+			local ORDER_COMMAND_LINE=$(cat /tmp/$DB_TEMP_FILE_NAME)
 			local SHDB_KEY=${ORDER_COMMAND_LINE#*get }
 
 			get "$SHDB_KEY"
-		elif [ -n "$(grep "[[:space:]]*delete[[:space:]][^[:space:]]*" /tmp/$TMP_FILE_NAME)" ]
+		elif [ -n "$(grep "[[:space:]]*delete[[:space:]][^[:space:]]*" /tmp/$DB_TEMP_FILE_NAME)" ]
 		then
-			local ORDER_COMMAND_LINE=$(cat /tmp/$TMP_FILE_NAME)
+			local ORDER_COMMAND_LINE=$(cat /tmp/$DB_TEMP_FILE_NAME)
 			local SHDB_KEY=${ORDER_COMMAND_LINE#*delete }
 
 			delete "$SHDB_KEY"
-		elif [ -n "$(grep "[[:space:]]*isset[[:space:]][^[:space:]]*" /tmp/$TMP_FILE_NAME)" ]
+		elif [ -n "$(grep "[[:space:]]*isset[[:space:]][^[:space:]]*" /tmp/$DB_TEMP_FILE_NAME)" ]
 		then
-			local ORDER_COMMAND_LINE=$(cat /tmp/$TMP_FILE_NAME)
+			local ORDER_COMMAND_LINE=$(cat /tmp/$DB_TEMP_FILE_NAME)
 			local SHDB_KEY=${ORDER_COMMAND_LINE#*isset }
 
 			isset "$SHDB_KEY"
@@ -436,7 +436,7 @@ EOF
 }
 
 
-# Set system global variable
+# Reset system global variable
 PRE_IFS=$IFS
 
 IFS=" "
