@@ -70,7 +70,8 @@ Please use this mode's syntax in shell programming, demo used for instance.
 * ~~Adapter to blank spaces in content.~~
 * ~~Optimize storing engin as block storing style.~~
 * ~~Long length content support.~~
-* Ability of getting db storing items' count support.
+* Add new ability to get db storing items' count.
+* Add new ability to choose storing engins (File / [GDBM](http://www.gnu.org.ua/software/gdbm/manual.html)).
 
 ## Author
 @YHSPY
