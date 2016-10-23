@@ -45,6 +45,7 @@ Parameter `SIZE=1` means set the maximum availabe storage size of SHDB as 1MB. (
 >* `shdb [-s|--shell] set [key] [value]`
 >* `shdb [-s|--shell] get [key]`
 >* `shdb [-s|--shell] delete [key]`
+>* `shdb [-s|--shell] count`
 >* `shdb uninstall`
 
 ### Console Mode
@@ -55,6 +56,7 @@ Use `shdb console` to enter the Console mode.
 >* `set [key] [value]`
 >* `get [key]`
 >* `delete [key]`
+>* `count`
 >* `exit`
 
 ### Shell Mode
@@ -65,12 +67,13 @@ Please use this mode's syntax in shell programming, demo used for instance.
 >* `shdb [-s|--shell] set [key] [value]`
 >* `shdb [-s|--shell] get [key]`
 >* `shdb [-s|--shell] delete [key]`
+>* `shdb [-s|--shell] count`
 
 ## TODO
 * ~~Adapter to blank spaces in content.~~
 * ~~Optimize storing engin as block storing style.~~
 * ~~Long length content support.~~
-* Add new ability to get db storing items' count.
+* ~~Add new ability to get db storing items' count.~~
 * Add new ability to choose storing engins (File / [GDBM](http://www.gnu.org.ua/software/gdbm/manual.html)).
 
 ## Author

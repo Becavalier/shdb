@@ -8,7 +8,7 @@
 #
 # 	Install:
 #
-# 	bash bin/shdb.sh install
+# 	make SIZE=10
 #	
 #	Use:
 #
@@ -17,6 +17,7 @@
 #	shdb [-s|--shell] set [key] [value]
 #	shdb [-s|--shell] get [key]
 #	shdb [-s|--shell] delete [key]
+#	shdb [-s|--shell] count
 #	shdb uninstall
 #
 # Author: YHSPY
@@ -33,8 +34,8 @@ CONFIG_VAL=''
 DB_SIZE=0
 
 # Set default setting key-value pairs
-VERSION=1.0
-RELEASE=2016/10/18
+VERSION=1.1
+RELEASE=2016/10/23
 AVSIZE=1048576
 
 # Set key files' name
@@ -56,8 +57,7 @@ _func_get_db_system_item() {
 	if _func_has_been_installed
 	then
 		# Find key in db configuration file
-		sudo grep -w -n "${CONFIG_KEY}" ~/$DB_CONF_FILE_NAME 1> /tmp/$DB_TEMP_FILE_NAME
-		local GREP_INFO=$(cat /tmp/$DB_TEMP_FILE_NAME)
+		local GREP_INFO=$(sudo grep -w -n "${CONFIG_KEY}" ~/$DB_CONF_FILE_NAME)
 
 		_func_clear_temp
 
@@ -94,9 +94,7 @@ EOF
 _func_update_db_size_2bytes() {
 	if _func_has_been_installed
 	then
-		du -b ~/$DB_DATA_FILE_NAME 1> /tmp/$DB_TEMP_FILE_NAME
-
-		local DU_INFO=$(cat /tmp/$DB_TEMP_FILE_NAME)
+		local DU_INFO=$(du -b ~/$DB_DATA_FILE_NAME)
 		local FILE_SIZE=${DU_INFO%	*}
 
 		_func_clear_temp
@@ -171,8 +169,7 @@ isset() {
 		local SHDB_KEY=$BASE64_ENCODED
 
 		# Find key in db
-		sudo grep -o "|${SHDB_KEY}[^|]*|" ~/$DB_DATA_FILE_NAME 1> /tmp/$DB_TEMP_FILE_NAME
-		local GREP_INFO=$(cat /tmp/$DB_TEMP_FILE_NAME)
+		local GREP_INFO=$(sudo grep -o "|${SHDB_KEY}[^|]*|" ~/$DB_DATA_FILE_NAME)
 
 		_func_clear_temp
 
@@ -219,8 +216,7 @@ set() {
 		local SHDB_VALUE=$BASE64_ENCODED
 
 		# Find key in db
-		sudo grep -o "|${SHDB_KEY}[^|]*|" ~/$DB_DATA_FILE_NAME 1> /tmp/$DB_TEMP_FILE_NAME
-		local GREP_INFO=$(cat /tmp/$DB_TEMP_FILE_NAME)
+		local GREP_INFO=$(sudo grep -o "|${SHDB_KEY}[^|]*|" ~/$DB_DATA_FILE_NAME)
 
 		_func_clear_temp
 
@@ -250,8 +246,7 @@ get() {
 		local SHDB_KEY=$BASE64_ENCODED
 
 		# Find key in db
-		sudo grep -o "|${SHDB_KEY}[^|]*|" ~/$DB_DATA_FILE_NAME 1> /tmp/$DB_TEMP_FILE_NAME
-		local GREP_INFO=$(cat /tmp/$DB_TEMP_FILE_NAME)
+		local GREP_INFO=$(sudo grep -o "|${SHDB_KEY}[^|]*|" ~/$DB_DATA_FILE_NAME)
 
 		_func_clear_temp
 
@@ -288,8 +283,7 @@ delete() {
 		local SHDB_KEY=$BASE64_ENCODED
 
 		# Find key in db
-		sudo grep -o "|${SHDB_KEY}[^|]*|" ~/$DB_DATA_FILE_NAME 1> /tmp/$DB_TEMP_FILE_NAME
-		local GREP_INFO=$(cat /tmp/$DB_TEMP_FILE_NAME)
+		local GREP_INFO=$(sudo grep -o "|${SHDB_KEY}[^|]*|" ~/$DB_DATA_FILE_NAME)
 
 		_func_clear_temp
 
@@ -316,12 +310,25 @@ delete() {
 	fi
 }
 
+count() {
+	if _func_has_been_installed
+	then
+		local COUNT_TEMP=$(sudo grep -o "|" ~/$DB_DATA_FILE_NAME | grep -c "|")
+		local COUNT_ITEM=$(($COUNT_TEMP-1))
+
+		if [ "$1" = --shell ]
+		then
+			printf "$COUNT_ITEM"
+		else
+			printf "[Count] $COUNT_ITEM\n"
+		fi
+	fi
+}
+
 _func_print_status() {
 	if _func_has_been_installed
 	then
-		du -h ~/$DB_DATA_FILE_NAME 1> /tmp/$DB_TEMP_FILE_NAME
-
-		local DU_INFO=$(cat /tmp/$DB_TEMP_FILE_NAME)
+		local DU_INFO=$(du -h ~/$DB_DATA_FILE_NAME)
 		local FILE_SIZE=${DU_INFO%	*}
 
 		_func_clear_temp
@@ -426,6 +433,9 @@ EOF
 			local SHDB_KEY=${ORDER_COMMAND_LINE#*isset }
 
 			isset "$SHDB_KEY"
+		elif [ "$ORDER" = "count" ]
+		then
+			count
 		elif [ "$ORDER" = "exit" ]
 		then
 			break
@@ -471,6 +481,13 @@ then
 				_func_report_error_msg PARAMS_ERR
 			;;
 		esac
+	elif [ $# -eq 2 ]
+	then
+		case "$2" in
+			count )
+				count --shell
+			;;
+		esac
 	else
 		_func_report_error_msg PARAMS_ERR
 	fi
@@ -512,6 +529,9 @@ else
 			;;
 			status )
 				_func_print_status
+			;;
+			count )
+				count
 			;;
 			uninstall )
 				uninstall
