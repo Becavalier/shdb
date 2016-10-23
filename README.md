@@ -37,7 +37,17 @@ Parameter `SIZE=1` means set the maximum availabe storage size of SHDB as 1MB. (
 
 ## How to Use
 
-![image](https://github.com/Becavalier/SHDB/blob/master/imgs/screenshot.jpg?raw=true)
+### Install (Screenshot)
+
+![image](https://github.com/Becavalier/SHDB/blob/master/imgs/screenshot-install.jpg?raw=true)
+
+### Test (Screenshot)
+
+![image](https://github.com/Becavalier/SHDB/blob/master/imgs/screenshot-test.jpg?raw=true)
+
+### Console Mode (Screenshot)
+
+![image](https://github.com/Becavalier/SHDB/blob/master/imgs/screenshot-console.jpg?raw=true)
 
 ### Normal CLI Mode
 >* `shdb status`
