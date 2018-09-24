@@ -8,46 +8,28 @@ Please do not compare SHDB with MySQL, Redis and any other DB programs. SHDB is 
 
 ## Features
 
-* Do not occupy any CPU or Memory when in idle moment.
+* Do not occupy any CPU or Memory resource when in idle moment.
 * Written in pure shell, lightweight and easy to use.
 * Support persistent data storing.
-* Support console mode for quick operation in CLI mode.
+* Support console mode for quick operation in REPL mode.
 
 ## Installation Instruction
 
-### Clone with SSH
->* `git clone git@github.com:Becavalier/SHDB.git`
-
-### Clone with HTTPS
->* `git clone https://github.com/Becavalier/SHDB.git`
-
 ### Installation
-Install SHDB use defualt settings:
+Install SHDB with defualt settings:
 >* `make` 
 
 Specify the maximum availabe storage size of SHDB:
 
 >* `make SIZE=1` 
 
-Parameter `SIZE=1` means set the maximum availabe storage size of SHDB as 1MB. (the maximum size is no more than 1024MB)
+*Parameter `SIZE=1` means set the maximum availabe storage size of SHDB as 1MB. (the maximum size is no more than 1024MB)
 
 ## Quick Test
 
 >* `make test`
 
 ## How to Use
-
-### Install (Screenshot)
-
-![image](https://github.com/Becavalier/SHDB/blob/master/imgs/screenshot-install.jpg?raw=true)
-
-### Test (Screenshot)
-
-![image](https://github.com/Becavalier/SHDB/blob/master/imgs/screenshot-test.jpg?raw=true)
-
-### Console Mode (Screenshot)
-
-![image](https://github.com/Becavalier/SHDB/blob/master/imgs/screenshot-console.jpg?raw=true)
 
 ### Normal CLI Mode
 >* `shdb status`
@@ -60,7 +42,7 @@ Parameter `SIZE=1` means set the maximum availabe storage size of SHDB as 1MB. (
 
 ### Console Mode
 
-Use `shdb console` to enter the Console mode.
+Use `shdb console` to enter the "Console" mode.
 
 >* `isset [key]`
 >* `set [key] [value]`
@@ -71,7 +53,7 @@ Use `shdb console` to enter the Console mode.
 
 ### Shell Mode
 
-Please use this mode's syntax in shell programming, demo used for instance.
+Please use this mode's syntax in shell programming, "demo.sh" used for instance.
 
 >* `shdb [-s|--shell] isset [key]`
 >* `shdb [-s|--shell] set [key] [value]`
@@ -85,6 +67,9 @@ Please use this mode's syntax in shell programming, demo used for instance.
 * ~~Long length content support.~~
 * ~~Add new ability to get db storing items' count.~~
 * Add new ability to choose storing engins (File / [GDBM](http://www.gnu.org.ua/software/gdbm/manual.html)).
+
+## Issue
+Please submit an issue if you have got any compatibility problems, thanks.
 
 ## Author
 @YHSPY
