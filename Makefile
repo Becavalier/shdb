@@ -6,7 +6,3 @@ install:
 
 clean:
 	@sudo ./shdb.sh uninstall
-
-test: 
-	@sudo chmod +x ./test.sh
-	@sudo bash ./test.sh 10

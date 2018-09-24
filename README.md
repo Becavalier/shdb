@@ -27,7 +27,7 @@ Specify the maximum availabe storage size of SHDB:
 
 ## Quick Test
 
->* `make test`
+>* `sudo shdb test`
 
 ## How to Use
 

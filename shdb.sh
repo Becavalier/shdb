@@ -229,7 +229,6 @@ set() {
 
 		if [ -n "$GREP_INFO" ] ;then
 			sudo sed -i.db -e "s#${GREP_INFO}#|${SHDB_KEY}:${SHDB_VALUE}|#" $HOME_DIR/${DB_DATA_FILE_NAME}
-			# fix issue (http://sed.sourceforge.net/sedfaq5.html#s5.10);
 		else
 			sudo echo "|${SHDB_KEY}:${SHDB_VALUE}|" >> $HOME_DIR/$DB_DATA_FILE_NAME
 		fi
@@ -319,6 +318,60 @@ count() {
 		else
 			printf "[Count] $COUNT_ITEM\n"
 		fi
+	fi
+}
+
+test() {
+	local VALUE="SHDB"
+
+	printf "\n"
+	sleep 2
+
+	echo "[operation] Let's detect if a key 'count' had been set in SHDB ..."
+
+	# Validate if a key had been stored in SHDB
+	if shdb -s isset count ;then
+		echo "[result] Already set... succeed"
+	else
+		echo "[result] isset... succeed"
+	fi
+
+	printf "\n"
+	sleep 2
+
+	echo "[operation] Let's reset/set a key 'count' with a value in SHDB ..."
+
+	# Set a key in SHDB
+	if shdb -s set count "${VALUE}" ;then
+		echo "[result] set... succeed"
+	else
+		echo "[result] set... failed"
+	fi
+
+	printf "\n"
+	sleep 2
+
+	echo "[operation] Let's get a key 'count' of its value in SHDB ..."
+
+	if shdb -s isset count ;then
+		echo "[result] get... succeed"
+	else
+		echo "[result] get... failed"
+	fi
+
+	printf "\n"
+	sleep 2
+
+	echo "[operation] Let's delete a key 'count' in SHDB ..."
+
+	if shdb -s isset count ;then
+		if shdb -s delete count ;then
+			echo "[result] delete... succeed"
+		else
+			echo "[result] delete... failed"
+		fi 
+	else
+		echo "[result] Unset count yet."
 	fi
 }
 
@@ -524,6 +577,9 @@ else
 			;;
 			console )
 				console
+			;;
+			test )
+				test
 			;;
 			* )
 				_func_report_error_msg PARAMS_ERR 
