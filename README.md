@@ -62,11 +62,10 @@ Please use this mode's syntax in shell programming, "demo.sh" used for instance.
 >* `shdb [-s|--shell] count`
 
 ## TODO
-* ~~Adapter to blank spaces in content.~~
-* ~~Optimize storing engin as block storing style.~~
-* ~~Long length content support.~~
-* ~~Add new ability to get db storing items' count.~~
-* Add new ability to choose storing engins (File / [GDBM](http://www.gnu.org.ua/software/gdbm/manual.html)).
+- [x] Adapter to blank spaces in content.
+- [x] Optimize storing engin as block storing style.
+- [x] Long length content support.
+- [x] Add new ability to get db storing items' count.
 
 ## Issue
 Please submit an issue if you have got any compatibility problems, thanks.
