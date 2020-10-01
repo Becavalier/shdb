@@ -14,7 +14,7 @@ Specify the maximum available storage size for SHDB:
 
 >* `make SIZE=10` 
 
-*Parameter `SIZE=10` means that set the maximum available storage size of HDB as 10MB. (the maximum size cannot exceed 1024MB)
+\* `SIZE=10` means setting the maximum available storage to 10MB. (the maximum size cannot exceed 1024MB)
 
 ## Quick Test
 

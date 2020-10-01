@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 #=============================================================
 # SHDB
@@ -203,7 +204,7 @@ set() {
 
         if [ -n "$_GREP_INFO" ] ; then
             if [ "${OS_TYPE}" = "Linux" ] ; then
-                sed -i.db -e "s#${_GREP_INFO}#|${_SHDB_KEY}:${_SHDB_VAL}|#" ${DB_DATA_FILE_NAME}
+                sed -i -e "s#${_GREP_INFO}#|${_SHDB_KEY}:${_SHDB_VAL}|#" ${DB_DATA_FILE_NAME}
             else
                 sed -i "" -e "s#${_GREP_INFO}#|${_SHDB_KEY}:${_SHDB_VAL}|#" ${DB_DATA_FILE_NAME}
             fi
@@ -262,7 +263,7 @@ delete() {
 
         if [ -n "$_GREP_INFO" ] ; then
             if [ "${OS_TYPE}" = "Linux" ] ; then
-                sed -i.db -e "/${_GREP_INFO}/d" $DB_DATA_FILE_NAME
+                sed -i -e "/${_GREP_INFO}/d" $DB_DATA_FILE_NAME
             else
                 sed -i "" -e "/${_GREP_INFO}/d" $DB_DATA_FILE_NAME
             fi
