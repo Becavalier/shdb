@@ -25,9 +25,17 @@ set -e
 #=============================================================
 
 # set global variables.
-
 OS_TYPE=$(uname)
-HOME_DIR=$(echo -n ~)
+SUDO_USER=$(echo -n $SUDO_USER)
+if [ -n "$SUDO_USER" ] ; then
+     if [ "${OS_TYPE}" = "Linux" ] ; then
+        HOME_DIR=$(getent passwd $SUDO_USER | cut -d: -f6)
+     else
+        HOME_DIR="/Users/$SUDO_USER"
+     fi
+else
+    HOME_DIR=$(echo -n ~)
+fi
 
 BASE64_ENCODED=''
 BASE64_DECODED=''
@@ -147,15 +155,11 @@ update() {
 }
 
 uninstall() {
-    if [ -f $DB_CONF_FILE_NAME ] || [ -f $DB_DATA_FILE_NAME ] ; then
-        rm -f $DB_CONF_FILE_NAME
-        rm -f $DB_DATA_FILE_NAME
-        rm -f $DB_MAIN_ENTRY
+    rm -f $DB_CONF_FILE_NAME
+    rm -f $DB_DATA_FILE_NAME
+    rm -f $DB_MAIN_ENTRY
 
-        _func_report_info UNINSTALLED
-    else
-        _func_report_error NOT_INSTALLED
-    fi
+    _func_report_info UNINSTALLED
 }
 
 isset() {
@@ -389,7 +393,7 @@ EOF
         ;;
         NOT_INSTALLED ) 
             cat << EOF
-[shdb ERR] Please install SHDB first... error
+[shdb ERR] Core files missing, please re-install SHDB... error
 EOF
         ;;
         DB_OVERFLOW ) 
