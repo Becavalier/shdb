@@ -1,16 +1,15 @@
 #!/bin/bash
 
-#=================================================================
+#=============================================================
 # SHDB
 #
-# Desc: A simple, lightweight local key-value db for shell, mainly for data persistence.
-# Usage: 
+# A simple, lightweight key-value DB for shell programming.
 #
-#    Install:
+#  Install:
 #
-#     make SIZE=10
+#     make SIZE=10 (MB)
 #    
-#    Use:
+#  Usage:
 #
 #     shdb status
 #     shdb [-s|--shell] isset [key]
@@ -22,9 +21,10 @@
 #
 # Author: YHSPY
 # License: MIT
-#=================================================================
+#=============================================================
 
-# set global variables;
+# set global variables.
+
 OS_TYPE=$(uname)
 HOME_DIR=$(echo -n ~)
 
@@ -34,368 +34,329 @@ BASE64_DECODED=''
 CONFIG_KEY=''
 CONFIG_VAL=''
 
-DB_SIZE=0
+typeset -i DB_CURRENT_SIZE=0
 
-# set default setting key-value pairs;
+typeset -i BOOL_TRUE=0
+typeset -i BOOL_FALSE=1
+typeset -i EXIT_NORMAL=0
+typeset -i EXIT_ERROR=1
+
+# set default setting pairs;
 NAME="shdb"
 INSTALL_DIR="/usr/local/bin/"
-VERSION="1.2"
-RELEASE="2018/09/23"
-AVSIZE=1048576
+VERSION="1.4"
+RELEASE="2020/10/01"
+typeset -i AVSIZE=1000  # 1KB by default.
 
-# set key files' name;
+# set other configurations.
 DB_CONF_FILE_NAME="${HOME_DIR}/.shdb.master.conf"
 DB_DATA_FILE_NAME="${HOME_DIR}/.shdb.master.db"
-DB_TEMP_FILE_NAME="/tmp/.shdb.tmp"
 DB_MAIN_ENTRY="${INSTALL_DIR}${NAME}"
 
-# functions here;
-_func_has_been_installed() {
-    # return 0 represent true;
-    [ -f $DB_CONF_FILE_NAME ] && [ -f $DB_DATA_FILE_NAME ] && return 0 || return 1
+# function definitions.
+_func_has_installed() {
+    if [ -f $DB_CONF_FILE_NAME ] && [ -f $DB_DATA_FILE_NAME ] ; then
+        return $BOOL_TRUE
+    else
+        return $BOOL_FALSE
+    fi
 }
 
-_func_clear_temp() {
-    rm -f $DB_TEMP_FILE_NAME
-}
+_func_retrieve_db_system_item() {
+    if _func_has_installed ; then
+        # find value in db configuration file.
+        local _GREP_INFO=$(grep -w -n "$1" $DB_CONF_FILE_NAME)
 
-_func_get_db_system_item() {
-    if _func_has_been_installed ;then
-        # find key in db configuration file;
-        local GREP_INFO=$(grep -w -n "${CONFIG_KEY}" $DB_CONF_FILE_NAME)
-
-        _func_clear_temp
-
-        if [ -n "$GREP_INFO" ] ;then
-            CONFIG_VAL=${GREP_INFO##*=}
+        if [ -n "$_GREP_INFO" ] ; then
+            CONFIG_VAL=${_GREP_INFO##*=}
         fi
     else
-        _func_report_error_msg NOT_INSTALLED
+        _func_report_error NOT_INSTALLED
     fi
 }
 
 _func_base64_encode() {
-    # optimize according to RFC-822;
-    echo -n $1 | base64 > $DB_TEMP_FILE_NAME
-
-    sed -i.tmp ':a;N;$!ba;s/\n/ /g' "${DB_TEMP_FILE_NAME}"
-    sed -i.tmp 's/ \+//g' "${DB_TEMP_FILE_NAME}"
-
-    BASE64_ENCODED=$(cat $DB_TEMP_FILE_NAME)
-
-    _func_clear_temp
+    BASE64_ENCODED=$(echo -n "$1" | base64)
 }
 
 _func_base64_decode() {
-    cat > $DB_TEMP_FILE_NAME << EOF
-${1}
-EOF
-    if [ "${OS_TYPE}" = "Linux" ] ;then
-        BASE64_DECODED=$(base64 -d $DB_TEMP_FILE_NAME)
-    else 
-        BASE64_DECODED=$(base64 -D $DB_TEMP_FILE_NAME)
-    fi
-
-    _func_clear_temp
+    BASE64_DECODED=$(echo -n "$1" | base64 --decode)
 }
 
-_func_update_db_size_2bytes() {
-    if _func_has_been_installed ;then
-        local DU_INFO
-        if [ "${OS_TYPE}" = "Linux" ] ;then
-            DU_INFO=$(du --apparent-size --block-size=1 $DB_DATA_FILE_NAME)
+_func_calc_db_size() {
+    if _func_has_installed ; then
+        local _DU_INFO
+        if [ "${OS_TYPE}" = "Linux" ] ; then
+            _DU_INFO=$(du --apparent-size --block-size=1 $DB_DATA_FILE_NAME)
         else
-            DU_INFO=$(du -k $DB_DATA_FILE_NAME)
+            _DU_INFO=$(du -k $DB_DATA_FILE_NAME)
         fi
-        local FILE_SIZE=${DU_INFO%	*}
-
-        _func_clear_temp
-
-        DB_SIZE=$FILE_SIZE
+        DB_CURRENT_SIZE=${_DU_INFO%%	*}
     else
-        _func_report_error_msg NOT_INSTALLED
+        _func_report_error NOT_INSTALLED
     fi
 }
 
 install() {
-    if _func_has_been_installed ;then
-        _func_report_error_msg ALREADY_INSTALLED
+    if _func_has_installed ; then
+        _func_report_error ALREADY_INSTALLED
     else
-        # checklist;
-        if [ $# -eq 2 ] ;then
-            if [ "${1}" = "--size" ] || [ "${1}" = "-s" ] ;then
+        # checklist.
+        if [ $# -eq 2 ] ; then
+            if [ "${1}" = "--size" ] || [ "${1}" = "-s" ] ; then
                 local AVSIZE_VAL=${2}
-
-                if [ $AVSIZE_VAL -eq 0 ] || [ $AVSIZE_VAL -ge 1025 ] ;then
-                    _func_report_error_msg PARAMS_ERR
-                    exit 1
+                if [ $AVSIZE_VAL -eq 0 ] || [ $AVSIZE_VAL -ge 1025 ] ; then
+                    _func_report_error PARAMS_ERR
+                    exit $EXIT_ERROR
                 else
-                    AVSIZE_VAL=$(($AVSIZE_VAL*1048576))
-                    AVSIZE=$AVSIZE_VAL
+                    AVSIZE=$(($AVSIZE_VAL * 1000))
                 fi
             fi
         fi
-        printf "[SSDB DATEBASE FILE]\n" > $DB_DATA_FILE_NAME 
+        printf "[SHDB DATEBASE FILE]\n" > $DB_DATA_FILE_NAME 
         cat > $DB_CONF_FILE_NAME << EOF
-[SSDB CONFIGURATION FILE]
+[SHDB CONFIGURATION FILE]
 
-NAME=SHDB
+NAME=shdb
 VARSION=${VERSION}
 RELEASE=${RELEASE}
 AUTHOR=YHSPY
 AVSIZE=${AVSIZE}
 DATE=$(date)
 EOF
-        # move to /usr/local/bin;
+        # move to /usr/local/bin, and grant exection privilege.
         cp -f ${0} $DB_MAIN_ENTRY
         chmod +x $DB_MAIN_ENTRY
 
-        _func_report_info_msg INSTALLED
-
-        # rm -f ${0}
+        _func_report_info INSTALLED
     fi
 }
 
 update() {
-    if _func_has_been_installed ;then
-        # update source file;
-        cp -f ${0} $DB_MAIN_ENTRY
-        chmod +x $DB_MAIN_ENTRY
+    if _func_has_installed ; then
+        if [ "${0}" != "$DB_MAIN_ENTRY" ] ; then
+            # update source file.
+            cp -f ${0} $DB_MAIN_ENTRY
+            chmod +x $DB_MAIN_ENTRY
+            _func_report_info UPDATED
+        fi
     else
-        _func_report_info_msg NOT_INSTALLED
+        _func_report_info NOT_INSTALLED
     fi
 }
 
 uninstall() {
-    if [ -f $DB_CONF_FILE_NAME ] || [ -f $DB_DATA_FILE_NAME ] || [ -f $DB_TEMP_FILE_NAME ] ;then
+    if [ -f $DB_CONF_FILE_NAME ] || [ -f $DB_DATA_FILE_NAME ] ; then
         rm -f $DB_CONF_FILE_NAME
-        rm -f $DB_TEMP_FILE_NAME
         rm -f $DB_DATA_FILE_NAME
         rm -f $DB_MAIN_ENTRY
 
-        _func_report_info_msg UNINSTALLED
+        _func_report_info UNINSTALLED
     else
-        _func_report_error_msg NOT_INSTALLED
+        _func_report_error NOT_INSTALLED
     fi
 }
 
 isset() {
-    if _func_has_been_installed ;then
+    if _func_has_installed ; then
         _func_base64_encode "$1"
-        local SHDB_KEY=$BASE64_ENCODED
+        
+        # find k-v in db.
+        local GREP_INFO=$(grep -o "|${BASE64_ENCODED}[^|]*|" $DB_DATA_FILE_NAME)
 
-        # find key in db;
-        local GREP_INFO=$(grep -o "|${SHDB_KEY}[^|]*|" $DB_DATA_FILE_NAME)
-
-        _func_clear_temp
-
-        if [ -n "$GREP_INFO" ] ;then
-            if [ "$2" = --shell ] ;then
-                exit 0
+        if [ -n "$GREP_INFO" ] ; then
+            if [ "$2" = --shell ] ; then
+                exit $EXIT_NORMAL
             else
                 printf "%s\n" [True]
             fi
         else
-            if [ "$2" = --shell ] ;then
-                exit 1
+            if [ "$2" = --shell ] ; then
+                exit $EXIT_ERROR
             else
                 printf "%s\n" [False]
             fi
         fi
     else
-        _func_report_error_msg NOT_INSTALLED
+        _func_report_error NOT_INSTALLED
     fi
 }
 
 set() {
-    CONFIG_KEY='AVSIZE'
+    _func_retrieve_db_system_item AVSIZE
+    _func_calc_db_size
 
-    _func_get_db_system_item
-    
-    _func_update_db_size_2bytes
-
-    if [ $DB_SIZE -ge $CONFIG_VAL ] ;then
-        _func_report_error_msg DB_OVERFLOW
-        exit 1
+    if [ $DB_CURRENT_SIZE -ge $CONFIG_VAL ] ; then
+        _func_report_error DB_OVERFLOW
+        exit $EXIT_ERROR
     fi
     
-    if _func_has_been_installed ;then
-        _func_base64_encode "$1"
-        local SHDB_KEY=$BASE64_ENCODED
+    if _func_has_installed ; then
+        _func_base64_encode $1
+        local _SHDB_KEY=$BASE64_ENCODED
 
-        _func_base64_encode "$2"
-        local SHDB_VALUE=$BASE64_ENCODED
+        _func_base64_encode $2
+        local _SHDB_VAL=$BASE64_ENCODED
 
-        # find key in db;
-        local GREP_INFO=$(grep -o "|${SHDB_KEY}[^|]*|" $DB_DATA_FILE_NAME)
+        # find existing item in db.
+        local _GREP_INFO=$(grep -o "|${_SHDB_KEY}[^|]*|" $DB_DATA_FILE_NAME)
 
-        _func_clear_temp
-
-        if [ -n "$GREP_INFO" ] ;then
-            sed -i.db -e "s#${GREP_INFO}#|${SHDB_KEY}:${SHDB_VALUE}|#" ${DB_DATA_FILE_NAME}
+        if [ -n "$_GREP_INFO" ] ; then
+            if [ "${OS_TYPE}" = "Linux" ] ; then
+                sed -i.db -e "s#${_GREP_INFO}#|${_SHDB_KEY}:${_SHDB_VAL}|#" ${DB_DATA_FILE_NAME}
+            else
+                sed -i "" -e "s#${_GREP_INFO}#|${_SHDB_KEY}:${_SHDB_VAL}|#" ${DB_DATA_FILE_NAME}
+            fi
         else
-            echo "|${SHDB_KEY}:${SHDB_VALUE}|" >> $DB_DATA_FILE_NAME
+            echo "|${_SHDB_KEY}:${_SHDB_VAL}|" >> $DB_DATA_FILE_NAME
         fi
 
-        if [ "$3" = --shell ] ;then
-            exit 0
+        if [ "$3" = --shell ] ; then
+            exit $EXIT_NORMAL
         else
             printf "%s\n" "[OK]" 
         fi
-        
     else
-        _func_report_error_msg NOT_INSTALLED
+        _func_report_error NOT_INSTALLED
     fi
 }
 
 get() {
-    if _func_has_been_installed ;then
-        _func_base64_encode "$1"
-        local SHDB_KEY=$BASE64_ENCODED
+    if _func_has_installed ; then
+        _func_base64_encode $1
+        local _SHDB_KEY=$BASE64_ENCODED
 
-        # find key in db;
-        local GREP_INFO=$(grep -o "|${SHDB_KEY}[^|]*|" $DB_DATA_FILE_NAME)
+        # find existing item in db.
+        local _GREP_INFO=$(grep -o "|${_SHDB_KEY}[^|]*|" $DB_DATA_FILE_NAME)
 
-        _func_clear_temp
+        if [ -n "$_GREP_INFO" ] ; then
+            local _SHDB_VAL_TEMP=${_GREP_INFO##*:}
+            local _SHDB_VAL=${_SHDB_VAL_TEMP%%|*}
 
-        if [ -n "$GREP_INFO" ] ;then
-            local SHDB_VAL_TEMP=${GREP_INFO##*:}
-            local SHDB_VAL=${SHDB_VAL_TEMP%%|*}
+            _func_base64_decode $_SHDB_VAL
 
-            _func_base64_decode $SHDB_VAL
-
-            if [ "$2" = --shell ] ;then
+            if [ "$2" = --shell ] ; then
                 printf "%s" "$BASE64_DECODED"
             else
                 printf "%s\n" "$BASE64_DECODED"
             fi
         else
-            if [ "$2" = --shell ] ;then
-                exit 1
+            if [ "$2" = --shell ] ; then
+                exit $EXIT_ERROR
             else
                 printf "[Empty]\n"
             fi
         fi
     else
-        _func_report_error_msg NOT_INSTALLED
+        _func_report_error NOT_INSTALLED
     fi
 }
 
 delete() {
-    if _func_has_been_installed
-    then
-        _func_base64_encode "$1"
-        local SHDB_KEY=$BASE64_ENCODED
+    if _func_has_installed ; then
+        _func_base64_encode $1
+        local _SHDB_KEY=$BASE64_ENCODED
 
-        # find key in db;
-        local GREP_INFO=$(grep -o "|${SHDB_KEY}[^|]*|" $DB_DATA_FILE_NAME)
+        # find existing item in db.
+        local _GREP_INFO=$(grep -o "|${_SHDB_KEY}[^|]*|" $DB_DATA_FILE_NAME)
 
-        _func_clear_temp
+        if [ -n "$_GREP_INFO" ] ; then
+            if [ "${OS_TYPE}" = "Linux" ] ; then
+                sed -i.db -e "/${_GREP_INFO}/d" $DB_DATA_FILE_NAME
+            else
+                sed -i "" -e "/${_GREP_INFO}/d" $DB_DATA_FILE_NAME
+            fi
 
-        if [ -n "$GREP_INFO" ] ;then
-            sed -i.db -e "s/${GREP_INFO}//" $DB_DATA_FILE_NAME
-
-            if [ "$2" = --shell ] ;then
-                exit 0
+            if [ "$2" = --shell ] ; then
+                exit $EXIT_NORMAL
             else
                 printf "[Deleted]\n"
             fi
         else
-            if [ "$2" = --shell ] ;then
-                exit 1
+            if [ "$2" = --shell ] ; then
+                exit $EXIT_ERROR
             else
                 printf "[Empty]\n"
             fi
         fi
     else
-        _func_report_error_msg NOT_INSTALLED
+        _func_report_error NOT_INSTALLED
     fi
 }
 
 count() {
-    if _func_has_been_installed ;then
-        local COUNT_TEMP=$(grep -o "|" $DB_DATA_FILE_NAME | grep -c "|")
-        local COUNT_ITEM=$(($COUNT_TEMP/2))
+    if _func_has_installed ; then
+        local _COUNT_TEMP=$(grep -o "|" $DB_DATA_FILE_NAME | grep -c "|")
+        local _COUNT_ITEM=$(($_COUNT_TEMP / 2))
 
-        if [ "$1" = --shell ] ;then
-            printf "$COUNT_ITEM"
+        if [ "$1" = --shell ] ; then
+            printf "$_COUNT_ITEM"
         else
-            printf "[Count] $COUNT_ITEM\n"
+            printf "[Count] $_COUNT_ITEM\n"
         fi
     fi
 }
 
 test() {
-    local VALUE="SHDB"
+    local _KEY="SHDB"
 
     printf "\n"
-    sleep 2
 
-    echo "[operation] Let's detect if a key 'count' had been set in SHDB ..."
-
-    # Validate if a key had been stored in SHDB
-    if shdb -s isset count ;then
-        echo "[result] Already set... succeed"
+    echo "[isset] Let's find if the KV \"count\" has been stored in SHDB ..."
+ 
+    if shdb -s isset count ; then
+        echo "[result] Already exist... succeed"
     else
-        echo "[result] isset... succeed"
+        echo "[result] (succeed)"
     fi
 
     printf "\n"
-    sleep 2
+    sleep 1
 
-    echo "[operation] Let's reset/set a key 'count' with a value in SHDB ..."
+    echo "[set] Let's reset/set the KV \"count\" with a value in SHDB ..."
 
     # Set a key in SHDB
-    if shdb -s set count "${VALUE}" ;then
-        echo "[result] set... succeed"
+    if shdb -s set count "${_KEY}" ; then
+        echo "[result] (succeed)"
     else
-        echo "[result] set... failed"
+        echo "[result] (failed)"
     fi
 
     printf "\n"
-    sleep 2
+    sleep 1
 
-    echo "[operation] Let's get a key 'count' of its value in SHDB ..."
+    echo "[get] Let's get the value of KV \"count\" from SHDB ..."
 
-    if shdb -s isset count ;then
-        echo "[result] get... succeed"
+    if shdb -s isset count ; then
+        local _VAL=$(shdb -s get count)
+        echo "[result] ${_VAL} (succeed)"
     else
-        echo "[result] get... failed"
+        echo "[result] (failed)"
     fi
 
     printf "\n"
-    sleep 2
+    sleep 1
 
-    echo "[operation] Let's delete a key 'count' in SHDB ..."
+    echo "[delete] Let's delete the KV \"count\" in SHDB ..."
 
-    if shdb -s isset count ;then
-        if shdb -s delete count ;then
-            echo "[result] delete... succeed"
+    if shdb -s isset count ; then
+        if shdb -s delete count ; then
+            echo "[result] (succeed)"
         else
-            echo "[result] delete... failed"
+            echo "[result] (failed)"
         fi 
-    else
-        echo "[result] Unset count yet."
     fi
 
     printf "\n"
 }
 
 _func_print_status() {
-    if _func_has_been_installed ;then
-        local DU_INFO=$(du -h $DB_DATA_FILE_NAME)
-        local FILE_SIZE=${DU_INFO%    *}
-
-        _func_clear_temp
-
-        # get maximum avaliable size;
-        CONFIG_KEY='AVSIZE'
-
-        _func_get_db_system_item
-
-        # format size to 'MB';
-        local DB_MAXIMUM_SIZE=$CONFIG_VAL
-        DB_MAXIMUM_SIZE=$(($DB_MAXIMUM_SIZE/1048576))
+    if _func_has_installed ; then
+        _func_retrieve_db_system_item AVSIZE
+        
+        local _FILE_SIZE=$(du -h $DB_DATA_FILE_NAME)
+        local _DB_MAXIMUM_SIZE=$CONFIG_VAL
+        _DB_MAXIMUM_SIZE=$(($_DB_MAXIMUM_SIZE))
 
         cat << EOF
 
@@ -404,54 +365,55 @@ _func_print_status() {
 
 Release Version: ${VERSION} 
 Release Date: ${RELEASE}                                    
-DB Current Size: ${FILE_SIZE}
-DB Maximum Size: ${DB_MAXIMUM_SIZE}MB
-
------------------     
-Copyright: YHSPY
------------------    
+DB Current Size: ${_FILE_SIZE}
+DB Maximum Size: ${_DB_MAXIMUM_SIZE}K
 
 EOF
     else
-        _func_report_error_msg NOT_INSTALLED
+        _func_report_error NOT_INSTALLED
     fi
 }
 
-_func_report_error_msg() {
+_func_report_error() {
     case "$1" in 
         PARAMS_ERR ) 
             cat << EOF
-[shdb ERR] Wrong number or format of arguments for this command... error
+[shdb ERR] Invalid command or arguments... error
 EOF
         ;;
         ALREADY_INSTALLED ) 
             cat << EOF
-[shdb ERR] SHDB had already been installed before... error
+[shdb ERR] SHDB has already been installed... error
 EOF
         ;;
         NOT_INSTALLED ) 
             cat << EOF
-[shdb ERR] Please install SHDB first before execute this command... error
+[shdb ERR] Please install SHDB first... error
 EOF
         ;;
         DB_OVERFLOW ) 
             cat << EOF
-[shdb ERR] SHDB had exceeded the maximum storage size you ever set... error
+[shdb ERR] SHDB has exceeded the maximum storage size... error
 EOF
         ;;
     esac
 }
 
-_func_report_info_msg() {
+_func_report_info() {
     case "$1" in 
         UNINSTALLED ) 
             cat << EOF
-[shdb INFO] SHDB now has been uninstalled from your system... succeed
+[shdb INFO] SHDB uninstall... succeed
 EOF
         ;;
         INSTALLED ) 
             cat << EOF
-[shdb INFO] SHDB now has been installed on your system... succeed
+[shdb INFO] SHDB install... succeed
+EOF
+        ;;
+        UPDATED ) 
+            cat << EOF
+[shdb INFO] SHDB update... succeed
 EOF
         ;;
     esac
@@ -462,60 +424,50 @@ console() {
     do
         printf "%s" "shdb > "
         read ORDER
-        cat > $DB_TEMP_FILE_NAME << EOF
-${ORDER}
-EOF
-        if [ -n "$(grep [[:space:]]*set[[:space:]][^[:space:]]*[[:space:]][^[:space:]]* $DB_TEMP_FILE_NAME)" ] ;then
-            local ORDER_COMMAND_LINE=$(cat $DB_TEMP_FILE_NAME)
-            local SHDORDER_COMMAND_LINE_S1=${ORDER_COMMAND_LINE#*set }
-            local SHDB_KEY=${SHDORDER_COMMAND_LINE_S1%% *}
-            local SHDB_VALUE=${SHDORDER_COMMAND_LINE_S1#${SHDB_KEY} }
+        if [ -n "$(echo -n "${ORDER}" | grep [[:space:]]*set[[:space:]][^[:space:]]*[[:space:]][^[:space:]]*)" ] ; then
+            local _SHDB_CMD=${ORDER#*set }
+            local _SHDB_KEY=${_SHDB_CMD%% *}
+            local _SHDB_VALUE=${_SHDB_CMD#${SHDB_KEY} }
 
-            set "$SHDB_KEY" "$SHDB_VALUE"
-        elif [ -n "$(grep "[[:space:]]*get[[:space:]][^[:space:]]*" $DB_TEMP_FILE_NAME)" ] ;then
-            local ORDER_COMMAND_LINE=$(cat $DB_TEMP_FILE_NAME)
-            local SHDB_KEY=${ORDER_COMMAND_LINE#*get }
+            set "$_SHDB_KEY" "$_SHDB_VALUE"
+        elif [ -n "$(echo -n "${ORDER}" | grep "[[:space:]]*get[[:space:]][^[:space:]]*")" ] ; then
+            local _SHDB_KEY=${ORDER#*get }
 
-            get "$SHDB_KEY"
-        elif [ -n "$(grep "[[:space:]]*delete[[:space:]][^[:space:]]*" $DB_TEMP_FILE_NAME)" ] ;then
-            local ORDER_COMMAND_LINE=$(cat $DB_TEMP_FILE_NAME)
-            local SHDB_KEY=${ORDER_COMMAND_LINE#*delete }
+            get "$_SHDB_KEY"
+        elif [ -n "$(echo -n "${ORDER}" | grep "[[:space:]]*delete[[:space:]][^[:space:]]*")" ] ; then
+            local _SHDB_KEY=${ORDER#*delete }
 
-            delete "$SHDB_KEY"
-        elif [ -n "$(grep "[[:space:]]*isset[[:space:]][^[:space:]]*" $DB_TEMP_FILE_NAME)" ] ;then
-            local ORDER_COMMAND_LINE=$(cat $DB_TEMP_FILE_NAME)
-            local SHDB_KEY=${ORDER_COMMAND_LINE#*isset }
+            delete "$_SHDB_KEY"
+        elif [ -n "$(echo -n "${ORDER}" | grep "[[:space:]]*isset[[:space:]][^[:space:]]*")" ] ; then
+            local _SHDB_KEY=${ORDER#*isset }
 
-            isset "$SHDB_KEY"
-        elif [ "$ORDER" = "count" ] ;then
+            isset "$_SHDB_KEY"
+        elif [ "$ORDER" = "count" ] ; then
             count
-        elif [ "$ORDER" = "exit" ] ;then
+        elif [ "$ORDER" = "exit" ] ; then
             break
         else
-            _func_report_error_msg PARAMS_ERR
+            _func_report_error PARAMS_ERR
         fi
     done
 }
 
-
-# Reset system global variable
+# save "Interal Field Separator".
 PRE_IFS=$IFS
-
 IFS=" "
 
-
-# Deal with parameters
-if [ "$1" = "-s" ] || [ "$1" = "--shell" ] ;then
-    if [ $# -eq 4 ] ;then
+# paly with parameters.
+if [ "$1" = "-s" ] || [ "$1" = "--shell" ] ; then
+    if [ $# -eq 4 ] ; then
         case "$2" in
             set )
                 set "${3}" "${4}" --shell
             ;;
             * )
-                _func_report_error_msg PARAMS_ERR
+                _func_report_error PARAMS_ERR
             ;;
         esac
-    elif [ $# -eq 3 ] ;then 
+    elif [ $# -eq 3 ] ; then 
         case "$2" in
             get )
                 get "${3}" --shell
@@ -527,20 +479,20 @@ if [ "$1" = "-s" ] || [ "$1" = "--shell" ] ;then
                 isset "${3}" --shell
             ;;
             * )
-                _func_report_error_msg PARAMS_ERR
+                _func_report_error PARAMS_ERR
             ;;
         esac
-    elif [ $# -eq 2 ] ;then
+    elif [ $# -eq 2 ] ; then
         case "$2" in
             count )
                 count --shell
             ;;
         esac
     else
-        _func_report_error_msg PARAMS_ERR
+        _func_report_error PARAMS_ERR
     fi
 else
-    if [ $# -eq 3 ] ;then
+    if [ $# -eq 3 ] ; then
         case "$1" in
             set )
                 set "${2}" "${3}"
@@ -549,10 +501,10 @@ else
                 install "${2}" "${3}"
             ;;
             * )
-                _func_report_error_msg PARAMS_ERR
+                _func_report_error PARAMS_ERR
             ;;
         esac
-    elif [ $# -eq 2 ] ;then 
+    elif [ $# -eq 2 ] ; then 
         case "$1" in
             get )
                 get "${2}"
@@ -564,10 +516,10 @@ else
                 isset "${2}"
             ;;
             * )
-                _func_report_error_msg PARAMS_ERR
+                _func_report_error PARAMS_ERR
             ;;
         esac
-    elif [ $# -eq 1 ] ;then
+    elif [ $# -eq 1 ] ; then
         case "$1" in
             install )
                 install
@@ -591,7 +543,7 @@ else
                 test
             ;;
             * )
-                _func_report_error_msg PARAMS_ERR 
+                _func_report_error PARAMS_ERR 
             ;;
         esac
     else
@@ -601,4 +553,4 @@ fi
 
 IFS=$PRE_IFS
 
-exit 0
+exit $EXIT_NORMAL
